@@ -293,7 +293,7 @@ str(cses_out)
 # # -----------------------------------------------------------------------
 # Define the format_labels function to extract and format ROs
 format_labels <- function(label_table) {
-  valid_labels <- label_table[label_table < 90]  # Exclude special codes / DK / NA / NR / ETC
+  valid_labels <- label_table[label_table > -15 & label_table < 90]  # Exclude special codes / DK / NA / NR / ETC
   formatted <- sapply(seq_along(valid_labels), function(i) {
     paste0("(", valid_labels[i], ") ", names(valid_labels)[i])
   })
@@ -312,12 +312,15 @@ for (var in names(cses_imd)) {
 
 table(vars_labels$responses_en=="" | is.na(vars_labels$responses_en))
 
-# REMOVING NAs/NRs/DKs from ROs
+# REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
+vars_labels$responses_en<-gsub("â€“", ":", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("00.", "0.", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("\\(7\\) 7. VOLUNTEERED: REFUSED", "", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("\\(8\\) 8. VOLUNTEERED: DON'T KNOW", "", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("\\(9\\) 9. MISSING", "", vars_labels$responses_en)
 
-table(vars_labels$responses_en)
+vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
+vars_labels$question_short_en<-gsub("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“", ":", vars_labels$question_short_en)
 
 # FILLING "Response Options" for Macro Variables.
 ########################################################################### TBD
