@@ -218,46 +218,45 @@ vars3 %in% names(cses_imd)
 cses_out <- cses_imd[vars3]
 
 # CHECKING INDIVIDUAL VARIABLES
-table(cses_out$IMD2005_1) # remove 789; 6-point
-table(cses_out$IMD2005_2) # remove 789; 4-point
-table(cses_out$IMD2016) # remove 7:9 values; 5-point
-table(cses_out$IMD2019_1) # remove 7:9 values; 2-point
-table(cses_out$IMD3001_PR_1) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
-table(cses_out$IMD3001_PR_2) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
-table(cses_out$IMD3001_LH) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
-table(cses_out$IMD3001_UH) # remove       9999993 9999995 9999996 9999997 9999998 9999999; 2-point
-table(cses_out$IMD3001_TS) # remove 9; 6-point
-table(cses_out$IMD3002_OUTGOV) # remove  9999996 9999997 9999998 9999999; 2-point
-table(cses_out$IMD3002_VS_1) # remove 9; 2-point
-table(cses_out$IMD3002_LR_CSES) # remove  9; 3-point
-table(cses_out$IMD3005_1) # remove  7      8      9; 2-point
-cses_out$IMD3010[cses_out$IMD3010==6]<-3; table(cses_out$IMD3010) # remove 789, 6 should be recoded to 3; 5-point
-table(cses_out$IMD3011) # remove 789; 5-point
-table(cses_out$IMD3012) # remove 7 8 9; 5-point
-table(cses_out$IMD3013_1) # remove 789; 3-point with 1,3,5
-table(cses_out$IMD3013_2) # remove 7 8 9; 2-point with 1,2
-table(cses_out$IMD3013_3) # remove 789; 2-point with 4 and 5
-table(cses_out$IMD3014) # remove 6789; 4-point
-table(cses_out$IMD5006_1) # remove 999; TOO MANY
-table(cses_out$IMD5006_2) # remove 999; TOO MANY
-cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; #4-point
-table(cses_out$IMD5013) # ok; 3-point
-table(cses_out$IMD5014) # remove 7; 5-point
-table(cses_out$IMD5032_4) # remove 9; 3-point
-table(cses_out$IMD5033) # remove 9; 3-point
-table(cses_out$IMD5034_2) # remove 6 9; 2-point
-table(cses_out$IMD5035) # remove 999; TOO MANY
-table(cses_out$IMD5048) # ok; 3-point
-table(cses_out$IMD5049) # remove 999; TOO MANY
-table(cses_out$IMD5050_1) # ok; 7-point
-table(cses_out$IMD5051_1) # remove 99 and -88; 10-point
-table(cses_out$IMD5052_2) # remove 99; TOO MANY
-table(cses_out$IMD5053_1) # remove 999999; TOO MANY
-table(cses_out$IMD5054_2) # remove 999; TOO MANY
-table(cses_out$IMD5055_1) # remove 999; TOO MANY
-table(cses_out$IMD5056_2) # remove 99999; TOO MANY
-table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
-table(cses_out$IMD5058_1) # remove 997   999; TOO MANY
+#table(cses_out$IMD2005_1) # remove 789; 6-point
+#table(cses_out$IMD2005_2) # remove 789; 4-point
+#table(cses_out$IMD2016) # remove 7:9 values; 5-point
+#table(cses_out$IMD2019_1) # remove 7:9 values; 2-point
+#table(cses_out$IMD3001_PR_1) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3001_PR_2) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3001_LH) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3001_UH) # remove       9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3001_TS) # remove 9; 6-point
+#table(cses_out$IMD3002_OUTGOV) # remove  9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3002_VS_1) # remove 9; 2-point
+#table(cses_out$IMD3002_LR_CSES) # remove  9; 3-point
+#table(cses_out$IMD3005_1) # remove  7      8      9; 2-point
+#table(cses_out$IMD3010) # remove 789, 6 should be recoded to 3; 5-point
+#table(cses_out$IMD3011) # remove 789; 5-point
+#table(cses_out$IMD3012) # remove 7 8 9; 5-point
+#table(cses_out$IMD3013_1) # remove 789; 3-point with 1,3,5
+#table(cses_out$IMD3013_2) # remove 7 8 9; 2-point with 1,2
+#table(cses_out$IMD3013_3) # remove 789; 2-point with 4 and 5
+#table(cses_out$IMD3014) # remove 6789; 4-point
+#table(cses_out$IMD5006_1) # remove 999; TOO MANY
+#table(cses_out$IMD5006_2) # remove 999; TOO MANY
+#table(cses_out$IMD5013) # ok; 3-point
+#table(cses_out$IMD5014) # remove 7; 5-point
+#table(cses_out$IMD5032_4) # remove 9; 3-point
+#table(cses_out$IMD5033) # remove 9; 3-point
+#table(cses_out$IMD5034_2) # remove 6 9; 2-point
+#table(cses_out$IMD5035) # remove 999; TOO MANY
+#table(cses_out$IMD5048) # ok; 3-point
+#table(cses_out$IMD5049) # remove 999; TOO MANY
+#table(cses_out$IMD5050_1) # ok; 7-point
+#table(cses_out$IMD5051_1) # remove 99 and -88; 10-point
+#table(cses_out$IMD5052_2) # remove 99; TOO MANY
+#table(cses_out$IMD5053_1) # remove 999999; TOO MANY
+#table(cses_out$IMD5054_2) # remove 999; TOO MANY
+#table(cses_out$IMD5055_1) # remove 999; TOO MANY
+#table(cses_out$IMD5056_2) # remove 99999; TOO MANY
+#table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
+#(cses_out$IMD5058_1) # remove 997   999; TOO MANY
 
 # REMOVING NAs/NRs/DKs
 # # -----------------------------------------------------------------------
@@ -267,9 +266,16 @@ table(cses_out$IMD5058_1) # remove 997   999; TOO MANY
 # 99. MISSING
 
 # --- Cleaning across differet NAs/NRs/DKs
-### INDIVIDUALLY RECODE EACH VAR BY GROUP
+# # -----------------------------------------------------------------------
 require(dplyr)
 
+# REMOVING SOME SPECIFIC CATEGORIES FOR SIMPLICITY
+cses_out$IMD3010[cses_out$IMD3010==6]<-3;
+cses_out$IMD2004[cses_out$IMD2004==5]<-NA
+cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
+cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
+
+### INDIVIDUALLY RECODE EACH VAR BY GROUP BELOW
 cses_out <- cses_out %>%
   mutate(across(c(IMD2014, IMD3006,
                   IMD5051_1, IMD5052_2,
@@ -277,10 +283,10 @@ cses_out <- cses_out %>%
                   replace(.x, .x %in% c(-88, -77, -66, 95:99), NA)))
 
 # FIX NEGATIVE VALUES
-cses_out$IMD5051_1<-(cses_out$IMD5051_1+10)/2
+#cses_out$IMD5051_1<-(cses_out$IMD5051_1+10)/2
 
 cses_out <- cses_out %>%
-  mutate(across(c(IMD3001_PR_1, IMD3001_PR_2,
+  mutate(across(c(IMD3001, IMD3001_PR_1, IMD3001_PR_2,
                    IMD3001_LH, IMD3001_UH, IMD2001_2,
                    IMD3002_OUTGOV, IMD3002_LR_CSES), ~
                   replace(.x, .x %in% c(9999993:9999999, 9997:9999), NA)))
@@ -288,7 +294,7 @@ cses_out <- cses_out %>%
 cses_out <- cses_out %>%
   mutate(across(c(IMD5006_1, IMD5006_2, IMD5035,
                    IMD5049, IMD5053_1, IMD5054_2,
-                   IMD5055_1, IMD5056_2,
+                   IMD5045_1, IMD5055_1, IMD5056_2,
                    IMD5057_1, IMD5058_1), ~
                   replace(.x, .x %in% c(9999999999, 999999, 99999, 997, 998, 999), NA)))
 
@@ -309,6 +315,7 @@ cses_out <- cses_out %>%
 cses_out <- cses_out %>%
   mutate(across(c(IMD3014, IMD5014, IMD5034_2, IMD2003, IMD2006), ~
                   replace(.x, .x %in% c(6:9), NA)))
+
 
 str(cses_out)
 
@@ -342,6 +349,18 @@ vars_labels$responses_en<-gsub("\\(7\\) 7. VOLUNTEERED: REFUSED", "", vars_label
 vars_labels$responses_en<-gsub("\\(8\\) 8. VOLUNTEERED: DON'T KNOW", "", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("\\(9\\) 9. MISSING", "", vars_labels$responses_en)
 
+vars_labels$responses_en<-gsub("(6) 6. OTHER", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(6) 6. [SEE ELECTION STUDY NOTES]", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE [NO ALLIANCES PERMITTED]", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(6) 6. NO INTERNATIONAL ELECTION OBSERVERS", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(6) 6. NEITHER SATISFIED NOR DISSATISFIED", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
+
+
 vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
 vars_labels$question_short_en<-gsub("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“", "", vars_labels$question_short_en)
 
@@ -354,6 +373,9 @@ vars_labels <- vars_labels %>%
   left_join(qword_ro, by = "column_name", suffix = c(".old", "")) %>%
   # Select columns from qword_ro and non-duplicated columns from vars_labels
   select(-contains(".old"))
+
+# Assign ROs
+vars_labels$responses_en_rec<-vars_labels$responses_en
 
 # SAVE CSES LABELS
 # # -----------------------------------------------------------------------
