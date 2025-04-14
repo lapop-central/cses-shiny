@@ -8,6 +8,7 @@
 # Machine: Windows OS
 # # -----------------------------------------------------------------------
 rm(list=ls()); gc()
+library(dplyr)
 
 # Loading DATA
 # # -----------------------------------------------------------------------
@@ -147,6 +148,29 @@ table(cses_imd$l1)
 # 05. INDIGENOUS / FIRST PEOPLES
 # table(cses_imd$IMD2010)
 
+# EMPLOYMENT/LABOR
+cses_imd$labor_force <- case_when(
+  cses_imd$IMD2014 %in% c(0, 1, 2, 3, 4, 5) ~ 1,
+  cses_imd$IMD2014 %in% c(6, 7, 8, 9, 10) ~ 2,
+  cses_imd$IMD2014 %in% c(11, 12) ~ 3,
+  TRUE ~ NA_real_  # Use NA_real_ for numeric NA values
+)
+
+# Create a factor with the three categories
+cses_imd$labor_force <- factor(cses_imd$labor_force, levels = c(1,2,3),
+                               labels = c("In Labor Force",
+                                          "Not in Labor Force",
+                                          "Other"))
+
+# COMPULSORY VOTE
+cses_imd$compulsory_vote <- case_when(
+  cses_imd$IMD5007 %in% c(1, 2, 3) ~ 1,
+  cses_imd$IMD5007 %in% c(5) ~ 0,
+  TRUE ~ NA_real_  # Use NA_real_ for numeric NA values
+)
+
+
+
 # WEIGHTS
 # # -----------------------------------------------------------------------
 table(cses_imd$IMD1010_1) # SAMPLE (SELECTION BIAS)
@@ -166,6 +190,8 @@ vars <- c(
   "edrerf",
   "age",
   "ur",
+  "labor_force",
+  "compulsory_vote",
   "pais",
   "year",
   "pais_num",
@@ -191,55 +217,47 @@ vars3 <- c(vars2, vars)
 vars3 %in% names(cses_imd)
 cses_out <- cses_imd[vars3]
 
-# REMOVING ALREADY RECODED VARS
-cses_out<-subset(cses_out, select=-c(IMD2001_2, IMD2002,
-                                     IMD2003, IMD2004,
-                                     IMD2006, IMD2007
-                                     ))
-names(cses_out)
-#cses_out$IMD2005_1 # remove 789
-#cses_out$IMD2005_2 # remove 789
-#cses_out$IMD2014 # remove 97 98 99
-#cses_out$IMD2016 # remove 7:9 values
-#cses_out$IMD2019_1 # remove 7:9 values
-#cses_out$IMD3001_PR_1 # remove  9999993 9999995 9999996 9999997 9999998 9999999
-#cses_out$IMD3001_PR_2 # remove  9999993 9999995 9999996 9999997 9999998 9999999
-#cses_out$IMD3001_LH # remove  9999993 9999995 9999996 9999997 9999998 9999999
-#cses_out$IMD3001_UH # remove       9999993 9999995 9999996 9999997 9999998 9999999
-#cses_out$IMD3001_TS # remove 9
-#cses_out$IMD3002_OUTGOV # remove  9999996 9999997 9999998 9999999
-#cses_out$IMD3002_VS_1 # remove 9
-#cses_out$IMD3002_LR_CSES # remove  9
-#cses_out$IMD3005_1 # remove  7      8      9
-#cses_out$IMD3006  # remove 95 96 97 98 99
-cses_out$IMD3010 # remove 789, 6 should be recoded to 3
-#cses_out$IMD3011 # remove 789
-#cses_out$IMD3012 # remove 7 8 9
-#cses_out$IMD3013_1 # remove 789
-#cses_out$IMD3013_2 # remove 7 8 9
-#cses_out$IMD3013_3 # remove 789
-#cses_out$IMD3014 # remove 6789
-
-#cses_out$IMD5006_1 # remove 999
-#cses_out$IMD5006_2 # remove 999
-#cses_out$IMD5007 # ok
-#cses_out$IMD5013 # ok
-#cses_out$IMD5014 # remove 7
-#cses_out$IMD5032_4 # remove 9
-#cses_out$IMD5033 # remove 9
-#cses_out$IMD5034_2 # remove 6 9
-#cses_out$IMD5035 # remove 999
-#cses_out$IMD5048 # ok
-#cses_out$IMD5049 # remove 999
-#cses_out$IMD5050_1 # ok
-cses_out$IMD5051_1 # remove 99, WHAT ABOUT -88? (TRANSITION PERIOD...)
-#cses_out$IMD5052_2 # remove 99
-#cses_out$IMD5053_1 # remove 999999
-#cses_out$IMD5054_2 # remove 999
-#cses_out$IMD5055_1 # remove 999
-#cses_out$IMD5056_2 # remove 99999
-#cses_out$IMD5057_1 # remove 9999999999
-#cses_out$IMD5058_1 # remove 997   999
+# CHECKING INDIVIDUAL VARIABLES
+table(cses_out$IMD2005_1) # remove 789; 6-point
+table(cses_out$IMD2005_2) # remove 789; 4-point
+table(cses_out$IMD2016) # remove 7:9 values; 5-point
+table(cses_out$IMD2019_1) # remove 7:9 values; 2-point
+table(cses_out$IMD3001_PR_1) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+table(cses_out$IMD3001_PR_2) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+table(cses_out$IMD3001_LH) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+table(cses_out$IMD3001_UH) # remove       9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+table(cses_out$IMD3001_TS) # remove 9; 6-point
+table(cses_out$IMD3002_OUTGOV) # remove  9999996 9999997 9999998 9999999; 2-point
+table(cses_out$IMD3002_VS_1) # remove 9; 2-point
+table(cses_out$IMD3002_LR_CSES) # remove  9; 3-point
+table(cses_out$IMD3005_1) # remove  7      8      9; 2-point
+cses_out$IMD3010[cses_out$IMD3010==6]<-3; table(cses_out$IMD3010) # remove 789, 6 should be recoded to 3; 5-point
+table(cses_out$IMD3011) # remove 789; 5-point
+table(cses_out$IMD3012) # remove 7 8 9; 5-point
+table(cses_out$IMD3013_1) # remove 789; 3-point with 1,3,5
+table(cses_out$IMD3013_2) # remove 7 8 9; 2-point with 1,2
+table(cses_out$IMD3013_3) # remove 789; 2-point with 4 and 5
+table(cses_out$IMD3014) # remove 6789; 4-point
+table(cses_out$IMD5006_1) # remove 999; TOO MANY
+table(cses_out$IMD5006_2) # remove 999; TOO MANY
+cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; #4-point
+table(cses_out$IMD5013) # ok; 3-point
+table(cses_out$IMD5014) # remove 7; 5-point
+table(cses_out$IMD5032_4) # remove 9; 3-point
+table(cses_out$IMD5033) # remove 9; 3-point
+table(cses_out$IMD5034_2) # remove 6 9; 2-point
+table(cses_out$IMD5035) # remove 999; TOO MANY
+table(cses_out$IMD5048) # ok; 3-point
+table(cses_out$IMD5049) # remove 999; TOO MANY
+table(cses_out$IMD5050_1) # ok; 7-point
+table(cses_out$IMD5051_1) # remove 99 and -88; 10-point
+table(cses_out$IMD5052_2) # remove 99; TOO MANY
+table(cses_out$IMD5053_1) # remove 999999; TOO MANY
+table(cses_out$IMD5054_2) # remove 999; TOO MANY
+table(cses_out$IMD5055_1) # remove 999; TOO MANY
+table(cses_out$IMD5056_2) # remove 99999; TOO MANY
+table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
+table(cses_out$IMD5058_1) # remove 997   999; TOO MANY
 
 # REMOVING NAs/NRs/DKs
 # # -----------------------------------------------------------------------
@@ -254,14 +272,18 @@ require(dplyr)
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD2014, IMD3006,
-                   IMD5051_1, IMD5052_2), ~
-                  replace(.x, .x %in% c(95:99), NA)))
+                  IMD5051_1, IMD5052_2,
+                  IMD2014, IMD3006), ~
+                  replace(.x, .x %in% c(-88, -77, -66, 95:99), NA)))
+
+# FIX NEGATIVE VALUES
+cses_out$IMD5051_1<-(cses_out$IMD5051_1+10)/2
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD3001_PR_1, IMD3001_PR_2,
-                   IMD3001_LH, IMD3001_UH,
+                   IMD3001_LH, IMD3001_UH, IMD2001_2,
                    IMD3002_OUTGOV, IMD3002_LR_CSES), ~
-                  replace(.x, .x %in% c(9999993:9999999), NA)))
+                  replace(.x, .x %in% c(9999993:9999999, 9997:9999), NA)))
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD5006_1, IMD5006_2, IMD5035,
@@ -273,18 +295,19 @@ cses_out <- cses_out %>%
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD3001_TS, IMD3002_VS_1, IMD5032_4,
-                   IMD5033), ~ replace(.x, .x %in% c(9), NA)))
+                   IMD5033, IMD3002_LR_CSES), ~ replace(.x, .x %in% c(9), NA)))
 
 
 
 cses_out <- cses_out %>%
-  mutate(across(-c(IMD2005_1, IMD2005_2, IMD2016,
+  mutate(across(c(IMD2005_1, IMD2005_2, IMD2016,
                    IMD2019_1, IMD3005_1, IMD3011,
                    IMD3012, IMD3013_1, IMD3013_2,
-                   IMD3013_3), ~ replace(.x, .x %in% c(7:9), NA)))
+                  IMD3010, IMD3013_3, IMD2002, IMD5036_3,
+                  IMD2004, IMD2007), ~ replace(.x, .x %in% c(7:9), NA)))
 
 cses_out <- cses_out %>%
-  mutate(across(c(IMD3014, IMD5014, IMD5034_2), ~
+  mutate(across(c(IMD3014, IMD5014, IMD5034_2, IMD2003, IMD2006), ~
                   replace(.x, .x %in% c(6:9), NA)))
 
 str(cses_out)
@@ -322,10 +345,18 @@ vars_labels$responses_en<-gsub("\\(9\\) 9. MISSING", "", vars_labels$responses_e
 vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
 vars_labels$question_short_en<-gsub("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“", "", vars_labels$question_short_en)
 
-# FILLING "Response Options" for Macro Variables.
+# FILLING "Question Wording" & "Response Options" for Variables.
+# # -----------------------------------------------------------------------
 ########################################################################### TBD
+qword_ro<-read.csv("./Data preprocessing/cses_qwording.csv", header=T)
+
+vars_labels <- vars_labels %>%
+  left_join(qword_ro, by = "column_name", suffix = c(".old", "")) %>%
+  # Select columns from qword_ro and non-duplicated columns from vars_labels
+  select(-contains(".old"))
 
 # SAVE CSES LABELS
+# # -----------------------------------------------------------------------
 write.csv(vars_labels, "./Data preprocessing/cses_variable_labels.csv", row.names=F)
 
 # Exporting DATA (.rds lighter file storage)
@@ -343,14 +374,7 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
                                        vars_labels$responses_en_rec,
                                        sep = " ")
 
-# # -----------------------------------------------------------------------
-# # -----------------------------------------------------------------------
-# # -----------------------------------------------------------------------
-########################################################################### TBD
-#### NEED TO ADD QUESTION WORDING AND RESPONSE OPTIONS TO CSV FILE!!!!
-########################################################################### TBD
-# # -----------------------------------------------------------------------
-# # -----------------------------------------------------------------------
+# FINAL EXPORT OF LABELS
 # # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
 

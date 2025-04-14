@@ -119,7 +119,7 @@ ui <- fluidPage(
                   label = "Countries",
                   choices = sort(levels(as_factor(dstrata$pais)[!is.na(dstrata$pais)])),
                   selected = c("Czech Republic/Czechia", "Germany",
-                               "Netherlands", "Peru"),
+                               "Netherlands"),
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
@@ -257,23 +257,36 @@ server <- function(input, output, session) {
 
   sliderParams <- reactiveValues(valuex = c(1, 1))
 
-  #set default slider values:
-  # 5-7 for 1-7 variable,
-  # 2 for 1-2 variable,
-  # 3-4 for 1-4 variable, and so on...
+  # Set default slider values:
+  # 2-point:
+  # 3-point:
+  # 4-point:
+  # 5-point:
+  # 6-point:
+  # 7-point:
+  # 10-point:
+  # ALL OTHER: MEAN
+
   observeEvent(input$variable, {
-    if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 7) {
-      sliderParams$valuex <- c(5, 7)
+    if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 1) {
+      sliderParams$valuex <- c(1, 1)
     } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 2) {
-      sliderParams$valuex <- c(2, 2)
+      sliderParams$valuex <- c(1, 1)
     } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 3) {
       sliderParams$valuex <- c(3, 3)
     } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 4) {
-      sliderParams$valuex <- c(3, 4)
+      sliderParams$valuex <- c(1, 2)
     } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 5) {
       sliderParams$valuex <- c(4, 5)
+    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 6) {
+      sliderParams$valuex <- c(3, 3)
+    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 7) {
+      sliderParams$valuex <- c(5, 7)
     } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 10) {
-      sliderParams$valuex <- c(7, 10)
+      sliderParams$valuex <- c(8, 10)
+    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) > 10) {
+      mean_val <- mean(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE)
+      sliderParams$valuex <- c(mean_val, mean_val)
     }
   })
 
