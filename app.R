@@ -8,8 +8,8 @@
 # Prev file: None
 # Status: On-going
 # Machine: Windows OS
-# # -----------------------------------------------------------------------
 
+# # -----------------------------------------------------------------------
 # Packages loading
 # # -----------------------------------------------------------------------
 library(lapop)
@@ -47,6 +47,7 @@ waves_total = c("1996", "1997", "1998", "1999", "2000", "2001", "2002",
 
 # Helper function for cleaning Time-series
 # handle missing values at end or middle of series
+# # -----------------------------------------------------------------------
 omit_na_edges <- function(df) {
   # Find which rows have NA values
   na_rows <- apply(df, 1, function(row) any(is.na(row)))
@@ -77,7 +78,7 @@ weighted.ttest.ci <- function(x, weights) {
 
 # Helper function for mover plot
 process_data <- function(data, outcome_var, recode_range, group_var, var_label,
-                         weight_var = "weight_demographic") {
+                         weight_var) {
 
   if (is.null(group_var)) {
     return(NULL)
@@ -263,6 +264,7 @@ server <- function(input, output, session) {
   sliderParams <- reactiveValues(valuex = c(1, 1))
 
   # Set default slider values:
+  # # -----------------------------------------------------------------------
   # 2-point:
   # 3-point:
   # 4-point:
@@ -350,7 +352,8 @@ server <- function(input, output, session) {
     slider_values()
   })
 
-  # SOURCE INFO WITH PAIS and WAVE
+# SOURCE INFO WITH PAIS and WAVE
+# # -----------------------------------------------------------------------
   source_info_both <- reactive({
     # Get country abbreviations that match selected country names
     pais_abbr <- dstrata %>%
@@ -362,7 +365,7 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", AmericasBarometer Data Playground\nCountries included: ", pais_display, "\nCSES rounds included: ", wave_display)
+    paste0(", CSES Data Playground\nCountries included: ", pais_display, "\nCSES rounds included: ", wave_display)
 
   })
 
@@ -377,35 +380,30 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", AmericasBarometer Data Playground\nCountries included: ", pais_display)
+    paste0(", CSES Data Playground\nCountries included: ", pais_display)
   })
 
   source_info_wave <- reactive({
-    # Get country abbreviations that match selected country names
-    pais_abbr <- dstrata %>%
-      filter(pais_nam %in% input$pais) %>%
-      distinct(pais_nam, pais_lab) %>%
-      arrange(match(pais_nam, input$pais)) %>%  # preserve input order
-      pull(pais_lab)
-
-    pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", AmericasBarometer Data Playground\nCSES rounds included: ", wave_display)
+    paste0(", CSES Data Playground\nCSES rounds included: ", wave_display)
   })
 
   # Histogram
+  # # -----------------------------------------------------------------------
   # must break into data event, graph event, and renderPlot to get download buttons to work
   histd <- eventReactive(input$go, ignoreNULL = FALSE, {
-    hist_df = Error(
+    hist_df <- Error(
       dff() %>%
-        group_by(across(outcome())) %>%
-        summarise(n = n())  %>%
-        drop_na() %>%
-        rename(cat = 1) %>%
-        mutate(prop = prop.table(n) * 100,
-               proplabel = paste(round(prop), "%", sep = ""),
-               cat = str_wrap(as.character(haven::as_factor(cat)), width = 25)))
+        drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
+        group_by(cat = haven::as_factor(!!sym(outcome()))) %>%
+        summarise(w = sum(!!sym(input$weight_type), na.rm = TRUE)) %>%
+        mutate(
+          prop = w / sum(w) * 100,
+          proplabel = paste0(round(prop), "%"),
+          cat = str_wrap(as.character(cat), width = 25)
+        )
+    )
 
     validate(
       need(hist_df, "Error: no data available. Please verify that this question was asked in this country/year combination.")
@@ -413,11 +411,10 @@ server <- function(input, output, session) {
     return(hist_df)
   })
 
-
   histg <- eventReactive(input$go, ignoreNULL = FALSE, {
     histg <- lapop_hist(histd(),
                         ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                        source_info = ", CSES Data Playground")
+                        source_info = source_info_both())
     return(histg)
   })
 
@@ -427,36 +424,44 @@ server <- function(input, output, session) {
 
 
   # Time-series
+  # # -----------------------------------------------------------------------
   tsd <- eventReactive(input$go, ignoreNULL = FALSE, {
-    dta_ts = Error(
+    dta_ts <- Error(
       dff() %>%
-        drop_na(outcome()) %>%
+        drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
         mutate(outcome_rec = case_when(
-          is.na(!!sym(outcome())) ~ NA_real_,
           !!sym(outcome()) >= input$recode[1] &
             !!sym(outcome()) <= input$recode[2] ~ 100,
-          TRUE ~ 0)) %>%
-        group_by(as.character(as_factor(wave))) %>%
-        summarise_at(vars("outcome_rec"),
-                     list(~weighted.ttest.ci(., weight_demographic))) %>%
+          TRUE ~ 0
+        )) %>%
+        group_by(wave = as.character(as_factor(wave))) %>%
+        summarise_at(
+          vars("outcome_rec"),
+          list(~weighted.ttest.ci(., !!sym(input$weight_type)))
+        ) %>%
         unnest_wider(col = "outcome_rec") %>%
         mutate(proplabel = paste0(round(prop), "%")) %>%
-        rename(.,  wave = 1) %>%
         filter(prop != 0)
     )
+
     validate(
       need(dta_ts, "Error: no data available. Please verify that this question was asked in this country/year combination.")
     )
-    dta_ts = merge(dta_ts, data.frame(wave = as.character(waves_total), empty = 1), by = "wave", all.y = TRUE)
+
+    dta_ts <- merge(dta_ts,
+                    data.frame(wave = as.character(waves_total), empty = 1),
+                    by = "wave", all.y = TRUE)
+
     return(omit_na_edges(dta_ts))
   })
+
 
   tsg <- eventReactive(input$go, ignoreNULL = FALSE, {
     tsg = lapop_ts(tsd(),
                    ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                    #label_vjust = -1.5,
                    label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                   source_info = ", CSES Data Playground",
+                   source_info = source_info_pais(),
                    subtitle = "% in selected category")
     return(tsg)
   })
@@ -467,25 +472,30 @@ server <- function(input, output, session) {
   })
 
   # Cross Country
+  # # -----------------------------------------------------------------------
   ccd <- eventReactive(input$go, ignoreNULL = FALSE, {
-    dta_cc = Error(
+    dta_cc <- Error(
       dff() %>%
-        drop_na(outcome()) %>%
+        drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
         mutate(outcome_rec = case_when(
-          is.na(!!sym(outcome())) ~ NA_real_,
           !!sym(outcome()) >= input$recode[1] &
             !!sym(outcome()) <= input$recode[2] ~ 100,
-          TRUE ~ 0)) %>%
+          TRUE ~ 0
+        )) %>%
         group_by(vallabel = pais_lab) %>%
-        summarise_at(vars("outcome_rec"),
-                     list(~weighted.ttest.ci(., weight_demographic))) %>%
+        summarise_at(
+          vars("outcome_rec"),
+          list(~weighted.ttest.ci(., !!sym(input$weight_type)))
+        ) %>%
         unnest_wider(col = "outcome_rec") %>%
         filter(prop != 0) %>%
         mutate(proplabel = paste0(round(prop), "%"))
     )
+
     validate(
       need(dta_cc, "Error: no data available. Please verify that this question was asked in this country/year combination")
     )
+
     return(dta_cc)
   })
 
@@ -493,7 +503,7 @@ server <- function(input, output, session) {
     ccg = lapop_cc(ccd(), sort = "hi-lo",
                    subtitle = "% in selected category",
                    ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
-                   source_info = ", CSES Data Playground")
+                   source_info = source_info_wave())
     return(ccg)
   })
 
@@ -502,6 +512,7 @@ server <- function(input, output, session) {
   })
 
   # Use function for each demographic breakdown variable
+  # # -----------------------------------------------------------------------
   secdf <- eventReactive(input$go, ignoreNULL = FALSE, {
     if (input$variable_sec == "None") {
       NULL
@@ -511,6 +522,7 @@ server <- function(input, output, session) {
         outcome_var = outcome(),
         recode_range = input$recode,
         group_var = input$variable_sec,
+        weight_var = input$weight_type,
         var_label = stringr::str_wrap(variable_sec_lab(), width = 25)
       )
     }
@@ -522,6 +534,7 @@ server <- function(input, output, session) {
         data = dff(),
         outcome_var = outcome(),
         recode_range = input$recode,
+        weight_var = input$weight_type,
         group_var = "gendermc",
         var_label = "Gender"
       )
@@ -536,6 +549,7 @@ server <- function(input, output, session) {
         data = dff(),
         outcome_var = outcome(),
         recode_range = input$recode,
+        weight_var = input$weight_type,
         group_var = "wealthf",
         var_label = "Wealth"
       )
@@ -550,6 +564,7 @@ server <- function(input, output, session) {
         data = dff(),
         outcome_var = outcome(),
         recode_range = input$recode,
+        weight_var = input$weight_type,
         group_var = "edrerf",
         var_label = "Education"
       )
@@ -564,6 +579,7 @@ server <- function(input, output, session) {
         data = dff(),
         outcome_var = outcome(),
         recode_range = input$recode,
+        weight_var = input$weight_type,
         group_var = "age",
         var_label = "Age"
       )
@@ -578,6 +594,7 @@ server <- function(input, output, session) {
         data = dff(),
         outcome_var = outcome(),
         recode_range = input$recode,
+        weight_var = input$weight_type,
         group_var = "ur",
         var_label = "Place of\nResidence"
       )
@@ -601,7 +618,7 @@ server <- function(input, output, session) {
                           subtitle = "% in selected category",
                           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-                          source_info = ", CSES Data Playground")
+                          source_info = source_info_both())
     return(moverg)
   })
 
@@ -609,7 +626,12 @@ server <- function(input, output, session) {
     return(moverg())
   })
 
-  # DOWNLOAD SECTION
+# # -----------------------------------------------------------------------
+# DOWNLOAD SECTION
+# # -----------------------------------------------------------------------
+
+# Download Plot
+# # -----------------------------------------------------------------------
   output$downloadPlot <- downloadHandler(
     filename = function(file) {
       ifelse(input$tabs == "Histogram", paste0("hist_", outcome(),".svg"),
@@ -687,7 +709,8 @@ server <- function(input, output, session) {
     }
   )
 
- # DOWNLOAD TABLE
+# DOWNLOAD TABLE
+ # -----------------------------------------------------------------------
   output$downloadTable <- downloadHandler(
     filename = function(file) {
       ifelse(input$tabs == "Histogram", paste0("hist_", outcome(),".csv"),
@@ -717,6 +740,10 @@ server <- function(input, output, session) {
   )
 }
 
+# RUN APP
+# # -----------------------------------------------------------------------
 shinyApp(ui, server)
 
+# # -----------------------------------------------------------------------
 # END
+# # -----------------------------------------------------------------------
