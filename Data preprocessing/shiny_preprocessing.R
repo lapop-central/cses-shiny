@@ -32,7 +32,7 @@ pais_lab<-unique(pais_lab)
 write.csv(pais_lab, "./Data preprocessing/pais_lab.csv", row.names=F)
 
 # YEARS VARIABLE
-table(cses_imd$IMD1008_YEAR); cses_imd$year <- cses_imd$IMD1008_YEAR
+table(cses_imd$IMD1008_YEAR); cses_imd$wave <- cses_imd$IMD1008_YEAR
 
 # Modules DUMMY VARS
 cses_imd$IMD1008_MOD<-NA
@@ -169,8 +169,6 @@ cses_imd$compulsory_vote <- case_when(
   TRUE ~ NA_real_  # Use NA_real_ for numeric NA values
 )
 
-
-
 # WEIGHTS
 # # -----------------------------------------------------------------------
 table(cses_imd$IMD1010_1) # SAMPLE (SELECTION BIAS)
@@ -193,7 +191,7 @@ vars <- c(
   "labor_force",
   "compulsory_vote",
   "pais",
-  "year",
+  "wave",
   "pais_num",
   "pais_lab",
   "weight_sample",
@@ -202,7 +200,7 @@ vars <- c(
 )
 
 # Variable Labels
-vars_labels <- read.csv("./Data preprocessing/cses_variable_labels.csv",
+vars_labels <- read.csv("./Data preprocessing/cses_variable_labels_raw.csv",
                         encoding = "latin1")
 
 # Variable Display for Dropdown Menu (category + question + name)
@@ -316,8 +314,14 @@ cses_out <- cses_out %>%
   mutate(across(c(IMD3014, IMD5014, IMD5034_2, IMD2003, IMD2006), ~
                   replace(.x, .x %in% c(6:9), NA)))
 
-
+# MERGE PAIS_LAB TO CSES_OUY
+pais_lab_merge<-subset(pais_lab, select=c("pais_lab", "pais_nam"))
+cses_out <- merge(cses_out, pais_lab_merge, by = "pais_lab")
 str(cses_out)
+
+# Exporting DATA (.rds lighter file storage)
+# # -----------------------------------------------------------------------
+saveRDS(cses_out, "./cses_shiny_data.rds")
 
 # EXTRACTING RESPONSE OPTIONS
 # # -----------------------------------------------------------------------
@@ -343,6 +347,7 @@ for (var in names(cses_imd)) {
 table(vars_labels$responses_en=="" | is.na(vars_labels$responses_en))
 
 # REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
+vars_labels$responses_en<-trimws(vars_labels$responses_en)
 vars_labels$responses_en<-gsub("â€“", ":", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("00.", "0.", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("\\(7\\) 7. VOLUNTEERED: REFUSED", "", vars_labels$responses_en)
@@ -354,11 +359,9 @@ vars_labels$responses_en<-gsub("(6) 6. [SEE ELECTION STUDY NOTES]", "", vars_lab
 vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE [NO ALLIANCES PERMITTED]", "", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("(6) 6. NO INTERNATIONAL ELECTION OBSERVERS", "", vars_labels$responses_en)
 vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(6) 6. NEITHER SATISFIED NOR DISSATISFIED", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub(" ", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("(1) 1. VERY SATISFIED (2) 2. FAIRLY SATISFIED (4) 4. NOT VERY SATISFIED (5) 5. NOT AT ALL SATISFIED (6) 6. NEITHER SATISFIED NOR DISSATISFIED",
+                               "(1) 1. VERY SATISFIED (2) 2. FAIRLY SATISFIED (3) 3. NEITHER SATISFIED NOR DISSATISFIED (4) 4. NOT VERY SATISFIED (5) 5. NOT AT ALL SATISFIED",
+                               vars_labels$responses_en)
 
 
 vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
@@ -375,15 +378,11 @@ vars_labels <- vars_labels %>%
   select(-contains(".old"))
 
 # Assign ROs
-vars_labels$responses_en_rec<-vars_labels$responses_en
+vars_labels$responses_en_rec<-tolower(vars_labels$responses_en)
 
 # SAVE CSES LABELS
 # # -----------------------------------------------------------------------
 write.csv(vars_labels, "./Data preprocessing/cses_variable_labels.csv", row.names=F)
-
-# Exporting DATA (.rds lighter file storage)
-# # -----------------------------------------------------------------------
-saveRDS(cses_out, "./cses_shiny_data.rds")
 
 # LABS VECTOR
 # # -----------------------------------------------------------------------
