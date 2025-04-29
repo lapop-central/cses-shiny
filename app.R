@@ -1,15 +1,15 @@
 # # -----------------------------------------------------------------------
 # CSES DATA PLAYGROUND
-# Date: April 10th, 2025
+# Date: April 25h, 2025
 # Author: Robert Vidigal, PhD
 # Purpose: CSES Shiny Data Playground
 # Data In: cses_shiny_data.rds / cses_variable_labels.csv / cses_labs.rds
 # Data Out: N/A
-# Prev file: None
+# Prev file: see shiny_preprocessing.R
 # Status: On-going
 # Machine: Windows OS
-
 # # -----------------------------------------------------------------------
+
 # Packages loading
 # # -----------------------------------------------------------------------
 library(lapop)
@@ -21,9 +21,9 @@ library(shinyWidgets)
 library(Hmisc)
 library(tidyr)
 
-lapop_fonts()
+lapop_fonts() # LAPOP GRAPH STYLE
 
-# IMD CSES Data (only selected variables)
+# IMD CSES Data (only preselected variables)
 dstrata <- readRDS("./cses_shiny_data.rds")
 
 # Labels data (for DP display)
@@ -45,8 +45,7 @@ waves_total = c("1996", "1997", "1998", "1999", "2000", "2001", "2002",
                 "2010", "2011", "2012", "2013", "2014", "2015", "2016",
                 "2017", "2018", "2019", "2020",  "2021")
 
-# Helper function for cleaning Time-series
-# handle missing values at end or middle of series
+# Helper function for Time-series (handle missing values at end or middle of series)
 # # -----------------------------------------------------------------------
 omit_na_edges <- function(df) {
   # Find which rows have NA values
@@ -63,6 +62,7 @@ omit_na_edges <- function(df) {
 }
 
 # Custom weighted averages & CIs, to speed up computational speed vs. survey_mean()
+# # -----------------------------------------------------------------------
 weighted.ttest.ci <- function(x, weights) {
   nx <- length(x)
   vx <- Hmisc::wtd.var(x, weights, normwt = TRUE, na.rm = TRUE) # Weighted variance
@@ -76,7 +76,8 @@ weighted.ttest.ci <- function(x, weights) {
   return(result)
 }
 
-# Helper function for mover plot
+# Helper function for mover plot (weighting and handling NAs)
+# # -----------------------------------------------------------------------
 process_data <- function(data, outcome_var, recode_range, group_var, var_label,
                          weight_var) {
 
@@ -104,7 +105,7 @@ process_data <- function(data, outcome_var, recode_range, group_var, var_label,
 }
 
 # # -----------------------------------------------------------------------
-# Creating User Interface
+# Creating User Interface UI!
 # # -----------------------------------------------------------------------
 ui <- fluidPage(
 
@@ -114,7 +115,6 @@ ui <- fluidPage(
 
     # Sidebar panel for inputs ----
     sidebarPanel(
-
 
       selectInput("variable", "Variable",
                   labs[order(names(labs))],
@@ -150,7 +150,7 @@ ui <- fluidPage(
       tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
 
       pickerInput(inputId = "wave",
-                  label = "CSES Survey Rounds",
+                  label = "CSES Survey Years",
                   choices = c("1996" = "1996",
                               "1997" = "1997",
                               "1998" = "1998",
@@ -179,21 +179,23 @@ ui <- fluidPage(
                               "2021" = "2021"),
                   selected = c("2021"),
                   options = list(`actions-box` = TRUE),
-                  # options = list
                   multiple = TRUE),
 
-      # NEW WEIGHT SELECTION RADIO BUTTONS
+      # WEIGHT selection radio buttons ----
       radioButtons("weight_type", "Weighting Variable",
                    choices = list("Demographic Weight" = "weight_demographic",
                                   "Sample Weight" = "weight_sample"),
                    selected = "weight_demographic"),
 
-      # Show recode slider only for time series, CC, and breakdown/mover (not hist)
+      # Show recode slider only for TS, CC, and mover plots (not for histogram)
       conditionalPanel(
-        'input.tabs == "Time Series" | input.tabs == "Cross Country" | input.tabs == "Breakdown"',
+        'input.tabs == "Time Series" |
+        input.tabs == "Cross Country" |
+        input.tabs == "Breakdown"',
         uiOutput("sliderUI"),
       ),
 
+      # Add additional breakdown variable in mover plot
       conditionalPanel(
         'input.tabs == "Breakdown"',
         selectInput("variable_sec", "Secondary Variable",
@@ -242,7 +244,7 @@ ui <- fluidPage(
 # Define server logic to plot various variables ----
 # # -----------------------------------------------------------------------
 
-# The server function will be called when each client (browser) loads the Shiny app.
+# The server function will be called when each client (browser) loads the app.
 server <- function(input, output, session) {
 
   formulaText <- reactive({
@@ -265,13 +267,13 @@ server <- function(input, output, session) {
 
   # Set default slider values:
   # # -----------------------------------------------------------------------
-  # 2-point:
-  # 3-point:
-  # 4-point:
-  # 5-point:
+  # 2-point: 1-1
+  # 3-point: 3-3
+  # 4-point: 1-2
+  # 5-point: 4-5
   # 6-point:
-  # 7-point:
-  # 10-point:
+  # 7-point: 5-7
+  # 10-point: 8-10
   # ALL OTHER: MEAN
 
   observeEvent(input$variable, {
@@ -309,8 +311,8 @@ server <- function(input, output, session) {
   # Filtering data based on user's selection (dff)
   dff <- eventReactive(input$go, ignoreNULL = FALSE, {
     dstrata %>%
-      filter(as_factor(wave) %in% input$wave) %>%
-      filter(pais_nam %in% input$pais)
+      filter(as_factor(wave) %in% input$wave) %>% # year
+      filter(pais_nam %in% input$pais) # country
   })
 
   # Rendering var caption based on user's var selection
@@ -321,7 +323,7 @@ server <- function(input, output, session) {
   output$caption <- eventReactive(input$go, ignoreNULL = FALSE, {
     cap()
   })
-  # Rendering qwording based on user's var selection
+  # Rendering wording based on user's var selection
   word <- renderText({
     vars_labels$question_en[which(vars_labels$column_name == formulaText())]
   })
@@ -365,7 +367,7 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\nCountries included: ", pais_display, "\nCSES rounds included: ", wave_display)
+    paste0(", CSES Data Playground\n", "\nCountries: ", pais_display, "\nCSES years: ", wave_display)
 
   })
 
@@ -380,14 +382,16 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\nCountries included: ", pais_display)
+    paste0(", CSES Data Playground\n", "\nCountries: ", pais_display)
   })
 
   source_info_wave <- reactive({
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\nCSES rounds included: ", wave_display)
+    paste0(", CSES Data Playground\n", "\nCSES years: ", wave_display)
   })
+
+#################################################### NEEED TO REMOVE LAPOP LAB
 
   # Histogram
   # # -----------------------------------------------------------------------
@@ -414,7 +418,7 @@ server <- function(input, output, session) {
   histg <- eventReactive(input$go, ignoreNULL = FALSE, {
     histg <- lapop_hist(histd(),
                         ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                        source_info = source_info_both())
+                        source_info = ", CSES Data Playground")
     return(histg)
   })
 
@@ -461,7 +465,7 @@ server <- function(input, output, session) {
                    ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                    #label_vjust = -1.5,
                    label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                   source_info = source_info_pais(),
+                   source_info = ", CSES Data Playground",
                    subtitle = "% in selected category")
     return(tsg)
   })
@@ -503,7 +507,7 @@ server <- function(input, output, session) {
     ccg = lapop_cc(ccd(), sort = "hi-lo",
                    subtitle = "% in selected category",
                    ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
-                   source_info = source_info_wave())
+                   source_info = ", CSES Data Playground")
     return(ccg)
   })
 
@@ -515,6 +519,9 @@ server <- function(input, output, session) {
   # # -----------------------------------------------------------------------
   secdf <- eventReactive(input$go, ignoreNULL = FALSE, {
     if (input$variable_sec == "None") {
+      NULL
+    } else if (variable_sec() == outcome()) {
+      showNotification(HTML("You cannot break the outcome variable by itself."), type = "error")
       NULL
     } else {
       process_data(
@@ -618,7 +625,7 @@ server <- function(input, output, session) {
                           subtitle = "% in selected category",
                           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-                          source_info = source_info_both())
+                          source_info = ", CSES Data Playground")
     return(moverg)
   })
 
@@ -643,38 +650,42 @@ server <- function(input, output, session) {
     content = function(file) {
       if(input$tabs == "Histogram") {
         title_text <- isolate(cap())
+        word_text <- isolate(word())
 
         hist_to_save <- lapop_hist(histd(),
                                    main_title = title_text,
                                    subtitle = "% in selected category ",
                                    ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                                   source_info = source_info_both())
+                                   source_info = paste0(source_info_both(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+        )
 
         lapop_save(hist_to_save, file)
-        showNotification(HTML("Plot download complete ✓ "), type = "message")
+        showNotification(HTML("Histogram plot download complete ✓ "), type = "message")
 
       } else if (input$tabs == "Time Series") {
         title_text <- isolate(cap())
         subtitle_text <- slider_values()
 
         # Check for single time period
-        if(any(table(tsd()$wave) == 1)) {
-          showNotification(
-            "Caution: your selection includes only one time period",
-            type = "warning",
-            duration = 5
-          )
-        }
+        #if(any(table(tsd()$wave) == 1)) {
+        #  showNotification(
+        #    "Caution: your selection includes only one time period",
+        #    type = "warning",
+        #    duration = 5
+        # )
+          #return()  # Stops further execution
+        #}
 
         ts_to_save <-  lapop_ts(tsd(),
                                 main_title = title_text,
                                 subtitle = paste0("% in selected category ", subtitle_text),
                                 ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                                 label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                                source_info = source_info_pais())
+                                source_info = paste0(source_info_pais(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+        )
 
         lapop_save(ts_to_save, file)
-        showNotification(HTML("Plot download complete ✓ "), type = "message")
+        showNotification(HTML("Time series plot download complete ✓ "), type = "message")
 
       } else if (input$tabs == "Cross Country") {
         title_text <- isolate(cap())
@@ -684,14 +695,16 @@ server <- function(input, output, session) {
                                main_title = title_text,
                                subtitle = paste0("% in selected category ", subtitle_text),
                                ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
-                               source_info = source_info_wave())
+                               source_info = paste0(source_info_wave(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+        )
 
         lapop_save(cc_to_save, file)
-        showNotification(HTML("Plot download complete ✓ "), type = "message")
+        showNotification(HTML("Cross country plot download complete ✓ "), type = "message")
 
       } else {
         title_text <- isolate(cap())
         subtitle_text <- slider_values()
+        word_text <- isolate(word())
 
         mover_to_save <- lapop_mover(
           moverd(),
@@ -699,11 +712,11 @@ server <- function(input, output, session) {
           subtitle = paste0("% in selected category ", subtitle_text),
           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-          source_info = source_info_both()
+          source_info = paste0(source_info_both(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
         )
 
         lapop_save(mover_to_save, file)
-        showNotification(HTML("Plot download complete ✓ "), type = "message")
+        showNotification(HTML("Break down plot download complete ✓ "), type = "message")
 
       }
     }
@@ -721,19 +734,19 @@ server <- function(input, output, session) {
     content = function(file) {
       if(input$tabs == "Histogram") {
         write.csv(histd(), file)
-        showNotification(HTML("File download complete ✓ "), type = "message")
+        showNotification(HTML("Histogram file download complete ✓ "), type = "message")
 
       } else if (input$tabs == "Time Series") {
         write.csv(tsd(), file)
-        showNotification(HTML("File download complete ✓ "), type = "message")
+        showNotification(HTML("Time series file download complete ✓ "), type = "message")
 
       } else if (input$tabs == "Cross Country") {
         write.csv(ccd(), file)
-        showNotification(HTML("File download complete ✓ "), type = "message")
+        showNotification(HTML("Cross country file download complete ✓ "), type = "message")
 
       } else {
         write.csv(moverd(), file)
-        showNotification(HTML("File download complete ✓ "), type = "message")
+        showNotification(HTML("Break down file download complete ✓ "), type = "message")
 
       }
     }
