@@ -26,6 +26,9 @@ lapop_fonts() # LAPOP GRAPH STYLE
 # IMD CSES Data (only preselected variables)
 dstrata <- readRDS("./cses_shiny_data.rds")
 
+# No weights
+dstrata$no_weight = 1
+
 # Labels data (for DP display)
 vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")
 vars_labels$responses_en_rec <- tolower(vars_labels$responses_en_rec)
@@ -78,8 +81,8 @@ weighted.ttest.ci <- function(x, weights) {
 
 # Helper function for mover plot (weighting and handling NAs)
 # # -----------------------------------------------------------------------
-process_data <- function(data, outcome_var, recode_range, group_var, var_label,
-                         weight_var) {
+process_data <- function(data, outcome_var, recode_range,
+                         group_var, var_label, weight_var) {
 
   if (is.null(group_var)) {
     return(NULL)
@@ -120,12 +123,18 @@ ui <- fluidPage(
                   labs[order(names(labs))],
                   selected = "IMD3010"),
 
-      # Default picks all countries
+      # Default picks most recent module
+      pickerInput(inputId = "module",
+                  label = "CSES Module",
+                  choices = sort(levels(as_factor(dstrata$IMD1008_MOD)[!is.na(dstrata$IMD1008_MOD)])),
+                  selected = c("MODULE 5"),
+                  options = list(`actions-box` = TRUE),
+                  multiple = TRUE),
+
+      # COUNTRY
       pickerInput(inputId = "pais",
                   label = "Countries",
                   choices = sort(levels(as_factor(dstrata$pais)[!is.na(dstrata$pais)])),
-                  selected = c("Czech Republic/Czechia", "Germany",
-                               "Netherlands"),
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
@@ -146,46 +155,35 @@ ui <- fluidPage(
         )
       ),
 
+      # This triggers the "Generate" button
+      tags$script(HTML("
+      Shiny.addCustomMessageHandler('clickGenerateButton', function(message) {
+    $('#go').click();
+  });
+")),
       # This makes the slider input to allow only integers for CSES years
       tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
 
       pickerInput(inputId = "wave",
-                  label = "CSES Survey Years",
-                  choices = c("1996" = "1996",
-                              "1997" = "1997",
-                              "1998" = "1998",
-                              "1999" = "1999",
-                              "2000" = "2000",
-                              "2001" = "2001",
-                              "2002" = "2002",
-                              "2003" = "2003",
-                              "2004" = "2004",
-                              "2005" = "2005",
-                              "2006" = "2006",
-                              "2007" = "2007",
-                              "2008" = "2008",
-                              "2009" = "2009",
-                              "2010" = "2010",
-                              "2011" = "2011",
-                              "2012" = "2012",
-                              "2013" = "2013",
-                              "2014" = "2014",
-                              "2015" = "2015",
-                              "2016" = "2016",
-                              "2017" = "2017",
-                              "2018" = "2018",
-                              "2019" = "2019",
-                              "2020" = "2020",
-                              "2021" = "2021"),
-                  selected = c("2021"),
+                  label = "Survey Years",
+                  choices = c("1996" = "1996", "1997" = "1997", "1998" = "1998",
+                              "1999" = "1999", "2000" = "2000", "2001" = "2001",
+                              "2002" = "2002", "2003" = "2003", "2004" = "2004",
+                              "2005" = "2005", "2006" = "2006", "2007" = "2007",
+                              "2008" = "2008", "2009" = "2009", "2010" = "2010",
+                              "2011" = "2011", "2012" = "2012", "2013" = "2013",
+                              "2014" = "2014", "2015" = "2015", "2016" = "2016",
+                              "2017" = "2017", "2018" = "2018", "2019" = "2019",
+                              "2020" = "2020", "2021" = "2021"),
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
       # WEIGHT selection radio buttons ----
       radioButtons("weight_type", "Weighting Variable",
-                   choices = list("Demographic Weight" = "weight_demographic",
+                   choices = list("No weights" = "no_weight",
+                                  "Demographic Weight" = "weight_demographic",
                                   "Sample Weight" = "weight_sample"),
-                   selected = "weight_demographic"),
+                   selected = "no_weight"),
 
       # Show recode slider only for TS, CC, and mover plots (not for histogram)
       conditionalPanel(
@@ -216,6 +214,7 @@ ui <- fluidPage(
     ),
 
     # Main panel for displaying outputs ----
+    # # -----------------------------------------------------------------------
     mainPanel(
 
       # Output: Formatted text for caption ----
@@ -247,6 +246,15 @@ ui <- fluidPage(
 # The server function will be called when each client (browser) loads the app.
 server <- function(input, output, session) {
 
+  # Triggers "go" between server and ui to generate default plots
+  observe({
+    if (!is.null(input$module) && !is.null(input$pais) && !is.null(input$wave)) {
+      isolate({
+        session$sendCustomMessage("clickGenerateButton", list())
+      })
+    }
+  })
+
   formulaText <- reactive({
     paste(input$variable)
   })
@@ -264,6 +272,36 @@ server <- function(input, output, session) {
   })
 
   sliderParams <- reactiveValues(valuex = c(1, 1))
+
+  # Reactive: Filter dataset based on selected module(s)
+  # # -----------------------------------------------------------------------
+  filtered_data <- reactive({
+    req(input$module)
+    dstrata %>%
+      filter(IMD1008_MOD %in% input$module)
+  })
+
+  # Observe changes in module input to update wave and pais
+  observeEvent(filtered_data(), {
+    data <- filtered_data()
+
+    wave_choices <- sort(unique(data$wave))
+    pais_choices <- sort(unique(data$pais))
+
+    updatePickerInput(
+      session = session,
+      inputId = "wave",
+      choices = wave_choices,
+      selected = wave_choices  # you can leave this empty if no preselection
+    )
+
+    updatePickerInput(
+      session = session,
+      inputId = "pais",
+      choices = pais_choices,
+      selected = pais_choices
+    )
+  })
 
   # Set default slider values:
   # # -----------------------------------------------------------------------
@@ -367,8 +405,10 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "\nCountries: ", pais_display, "\nCSES years: ", wave_display)
-
+    paste0(", CSES Data Playground\n",
+           "\nCountries: ", str_wrap(pais_display, 125),
+           "\nYears: ", wave_display, "\n",
+           str_wrap(paste0(word(), resp()), 125))
   })
 
   source_info_pais <- reactive({
@@ -382,13 +422,17 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "\nCountries: ", pais_display)
+    paste0(", CSES Data Playground\n", "\nCountries: ",  str_wrap(pais_display, 125),
+           "\n", str_wrap(paste0(word(), resp()), 125)
+    )
   })
 
   source_info_wave <- reactive({
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "\nCSES years: ", wave_display)
+    paste0(", CSES Data Playground\n", "\nYears: ", str_wrap(wave_display, 125),
+           "\n", str_wrap(paste0(word(), resp()), 125)
+    )
   })
 
 #################################################### NEEED TO REMOVE LAPOP LAB
@@ -656,7 +700,7 @@ server <- function(input, output, session) {
                                    main_title = title_text,
                                    subtitle = "% in selected category ",
                                    ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                                   source_info = paste0(source_info_both(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+                                   source_info = source_info_both()
         )
 
         lapop_save(hist_to_save, file)
@@ -681,7 +725,7 @@ server <- function(input, output, session) {
                                 subtitle = paste0("% in selected category ", subtitle_text),
                                 ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                                 label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                                source_info = paste0(source_info_pais(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+                                source_info = source_info_pais()
         )
 
         lapop_save(ts_to_save, file)
@@ -695,7 +739,7 @@ server <- function(input, output, session) {
                                main_title = title_text,
                                subtitle = paste0("% in selected category ", subtitle_text),
                                ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
-                               source_info = paste0(source_info_wave(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+                               source_info = source_info_wave()
         )
 
         lapop_save(cc_to_save, file)
@@ -712,7 +756,7 @@ server <- function(input, output, session) {
           subtitle = paste0("% in selected category ", subtitle_text),
           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-          source_info = paste0(source_info_both(), "\n", str_wrap(word(), 125), " Response Options: ", resp())
+          source_info = source_info_both()
         )
 
         lapop_save(mover_to_save, file)
