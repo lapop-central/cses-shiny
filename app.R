@@ -165,7 +165,7 @@ ui <- fluidPage(
       tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
 
       pickerInput(inputId = "wave",
-                  label = "Survey Years",
+                  label = " Years",
                   choices = c("1996" = "1996", "1997" = "1997", "1998" = "1998",
                               "1999" = "1999", "2000" = "2000", "2001" = "2001",
                               "2002" = "2002", "2003" = "2003", "2004" = "2004",
@@ -180,9 +180,9 @@ ui <- fluidPage(
 
       # WEIGHT selection radio buttons ----
       radioButtons("weight_type", "Weighting Variable",
-                   choices = list("No weights" = "no_weight",
-                                  "Demographic Weight" = "weight_demographic",
-                                  "Sample Weight" = "weight_sample"),
+                   choices = list("Unweighted" = "no_weight",
+                                  "Demographic weight" = "weight_demographic",
+                                  "Sample weight" = "weight_sample"),
                    selected = "no_weight"),
 
       # Show recode slider only for TS, CC, and mover plots (not for histogram)
