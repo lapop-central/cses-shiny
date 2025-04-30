@@ -48,10 +48,6 @@ cses_imd$IMD1008_MOD <- factor(cses_imd$IMD1008_MOD, levels = 1:5,
                                    "MODULE 4", "MODULE 5"))
 
 # # -----------------------------------------------------------------------
-# OUTCOME VARIABLES RECODE
-# # -----------------------------------------------------------------------
-
-# # -----------------------------------------------------------------------
 # GROUPING VARIABLES RECODE
 # # -----------------------------------------------------------------------
 
@@ -169,8 +165,18 @@ cses_imd$compulsory_vote <- case_when(
   TRUE ~ NA_real_  # Use NA_real_ for numeric NA values
 )
 
+# REMOVING SOME SPECIFIC CATEGORIES FOR SIMPLICITY OF ATA PRESENTATION
+# # -----------------------------------------------------------------------
+cses_imd$IMD3010[cses_imd$IMD3010==6]<-3;
+cses_imd$IMD2004[cses_imd$IMD2004==5]<-NA
+cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
+cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
+
 # WEIGHTS
 # # -----------------------------------------------------------------------
+cses_imd$no_weight <- 1 # UNWEIGHTED (RAW DATA)
+table(cses_imd$no_weight)
+
 table(cses_imd$IMD1010_1) # SAMPLE (SELECTION BIAS)
 cses_imd$weight_sample <- cses_imd$IMD1010_1
 
@@ -194,6 +200,7 @@ vars <- c(
   "wave",
   "pais_num",
   "pais_lab",
+  "no_weight",
   "weight_sample",
   "weight_demographic",
   "IMD1008_MOD"
@@ -256,6 +263,7 @@ cses_out <- cses_imd[vars3]
 #table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
 #(cses_out$IMD5058_1) # remove 997   999; TOO MANY
 
+
 # REMOVING NAs/NRs/DKs
 # # -----------------------------------------------------------------------
 # 95. VOLUNTEERED: HAVEN'T HEARD OF LEFT-RIGHT
@@ -263,17 +271,6 @@ cses_out <- cses_imd[vars3]
 # 98. VOLUNTEERED: DON'T KNOW WHERE TO PLACE
 # 99. MISSING
 
-# --- Cleaning across differet NAs/NRs/DKs
-# # -----------------------------------------------------------------------
-require(dplyr)
-
-# REMOVING SOME SPECIFIC CATEGORIES FOR SIMPLICITY
-cses_out$IMD3010[cses_out$IMD3010==6]<-3;
-cses_out$IMD2004[cses_out$IMD2004==5]<-NA
-cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
-cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
-
-### INDIVIDUALLY RECODE EACH VAR BY GROUP BELOW
 cses_out <- cses_out %>%
   mutate(across(c(IMD2014, IMD3006,
                   IMD5051_1, IMD5052_2,
@@ -301,8 +298,6 @@ cses_out <- cses_out %>%
   mutate(across(c(IMD3001_TS, IMD3002_VS_1, IMD5032_4,
                    IMD5033, IMD3002_LR_CSES), ~ replace(.x, .x %in% c(9), NA)))
 
-
-
 cses_out <- cses_out %>%
   mutate(across(c(IMD2005_1, IMD2005_2, IMD2016,
                    IMD2019_1, IMD3005_1, IMD3011,
@@ -314,16 +309,86 @@ cses_out <- cses_out %>%
   mutate(across(c(IMD3014, IMD5014, IMD5034_2, IMD2003, IMD2006), ~
                   replace(.x, .x %in% c(6:9), NA)))
 
-# MERGE PAIS_LAB TO CSES_OUY
+# # -----------------------------------------------------------------------
+# OUTCOME VARIABLES RECODE (NUMERIC TO LABELS)
+# # -----------------------------------------------------------------------
+# Function to convert labels to sentence case
+to_sentence_case <- function(x) {
+  sapply(x, function(s) {
+    s <- tolower(s)
+    # Capitalize first letter after ) or .
+    s <- gsub("([).]\\s*)([a-z])", "\\1\\U\\2", s, perl = TRUE)
+    # Also capitalize the very first character if needed
+    sub("^(\\w)", "\\U\\1", s, perl = TRUE)
+  }, USE.NAMES = FALSE)
+}
+
+# Function to replace numeric values with labels from another dataset (cses_imd)
+replace_all_with_labels <- function(data, data_out) {
+  label_table <- attr(data, "label.table", exact = TRUE)
+  data_labeled <- data_out  # We will modify the `data_out` dataset
+
+  for (var in names(data_out)) {
+    if (!is.null(label_table[[var]])) {
+      # Get the original data and labels from cses_imd
+      original <- data[[var]]  # This is from cses_imd, the source dataset
+      labels <- label_table[[var]]
+
+      # Reverse the label mapping: names = values, values = labels
+      reversed_labels <- setNames(names(labels), as.character(labels))
+
+      # Clean label text: remove leading number + dot + space (e.g., "1. ")
+      clean_labels <- sub("^\\d+\\.\\s*", "", reversed_labels)
+      clean_labels <- to_sentence_case(clean_labels)
+
+      # Rebuild mapping with cleaned labels
+      clean_map <- setNames(clean_labels, names(reversed_labels))
+
+      # Get the corresponding values in the data_out dataset (which is `cses_out`)
+      val_char <- as.character(data_out[[var]])
+
+      # Replace the values with corresponding labels (cleaned)
+      replaced <- ifelse(val_char %in% names(clean_map), clean_map[val_char], val_char)
+      replaced[is.na(val_char)] <- NA  # Handle NA values appropriately
+
+      # Keep the numeric values for plotting (by adding a new variable with labels)
+      data_labeled[[paste0(var, "_labeled")]] <- replaced  # Store labeled version
+      data_labeled[[var]] <- as.numeric(data_out[[var]])  # Keep the numeric version for analysis
+
+      # Check the original type (factor or numeric)
+      if (is.factor(original)) {
+        used_labels <- unique(na.omit(replaced))
+        data_labeled[[paste0(var, "_labeled")]] <- factor(replaced, levels = used_labels)
+      } else if (is.numeric(original) || is.integer(original)) {
+        used_labels <- unique(na.omit(replaced))
+        data_labeled[[paste0(var, "_labeled")]] <- factor(replaced, levels = used_labels)
+      } else {
+        data_labeled[[paste0(var, "_labeled")]] <- replaced
+      }
+    }
+  }
+
+  return(data_labeled)
+}
+
+#cses_out_labels<-replace_all_with_labels(cses_imd, cses_out)
+
+### Releveling Fixes
+#levels(cses_out_labels$IMD5007_labeled)[levels(cses_out_labels$IMD5007_labeled) == "0"] <- "No"
+#levels(cses_out_labels$IMD3010_labeled)[levels(cses_out_labels$IMD3010_labeled) == "3"] <- "Neither satisfied nor dissatisfied"
+
+# Exporting DATA (.rds lighter file storage)
+# # -----------------------------------------------------------------------
+# MERGE PAIS_LAB TO CSES_OUT BEFORE EXPORT
 pais_lab_merge<-subset(pais_lab, select=c("pais_lab", "pais_nam"))
 cses_out <- merge(cses_out, pais_lab_merge, by = "pais_lab")
 str(cses_out)
 
-# Exporting DATA (.rds lighter file storage)
-# # -----------------------------------------------------------------------
+# EXPORT
 saveRDS(cses_out, "./cses_shiny_data.rds")
 
-# EXTRACTING RESPONSE OPTIONS
+# # -----------------------------------------------------------------------
+# EXTRACTING RESPONSE OPTIONS FOR VARS_LABELS DATA
 # # -----------------------------------------------------------------------
 # Define the format_labels function to extract and format ROs
 format_labels <- function(label_table) {
@@ -346,30 +411,8 @@ for (var in names(cses_imd)) {
 
 table(vars_labels$responses_en=="" | is.na(vars_labels$responses_en))
 
-# REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
-vars_labels$responses_en<-trimws(vars_labels$responses_en)
-vars_labels$responses_en<-gsub("â€“", ":", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("00.", "0.", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("\\(7\\) 7. VOLUNTEERED: REFUSED", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("\\(8\\) 8. VOLUNTEERED: DON'T KNOW", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("\\(9\\) 9. MISSING", "", vars_labels$responses_en)
-
-vars_labels$responses_en<-gsub("(6) 6. OTHER", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(6) 6. [SEE ELECTION STUDY NOTES]", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE [NO ALLIANCES PERMITTED]", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(6) 6. NO INTERNATIONAL ELECTION OBSERVERS", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(7) 7. NOT APPLICABLE", "", vars_labels$responses_en)
-vars_labels$responses_en<-gsub("(1) 1. VERY SATISFIED (2) 2. FAIRLY SATISFIED (4) 4. NOT VERY SATISFIED (5) 5. NOT AT ALL SATISFIED (6) 6. NEITHER SATISFIED NOR DISSATISFIED",
-                               "(1) 1. VERY SATISFIED (2) 2. FAIRLY SATISFIED (3) 3. NEITHER SATISFIED NOR DISSATISFIED (4) 4. NOT VERY SATISFIED (5) 5. NOT AT ALL SATISFIED",
-                               vars_labels$responses_en)
-
-
-vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
-vars_labels$question_short_en<-gsub("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“", "", vars_labels$question_short_en)
-
 # FILLING "Question Wording" & "Response Options" for Variables.
 # # -----------------------------------------------------------------------
-########################################################################### TBD
 qword_ro<-read.csv("./Data preprocessing/cses_qwording.csv", header=T)
 
 vars_labels <- vars_labels %>%
@@ -377,13 +420,41 @@ vars_labels <- vars_labels %>%
   # Select columns from qword_ro and non-duplicated columns from vars_labels
   select(-contains(".old"))
 
-# Assign ROs
-vars_labels$responses_en_rec<-tolower(vars_labels$responses_en)
 
-# SAVE CSES LABELS
+# REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
+
+#vars_labels$responses_en<-gsub("â€“", ":", vars_labels$responses_en)
+#vars_labels$responses_en<-gsub("00.", "0.", vars_labels$responses_en)
+#vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
+#vars_labels$question_short_en<-gsub("ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“", "", vars_labels$question_short_en)
+vars_labels$responses_en<-trimws(vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(7\\) 7. VOLUNTEERED: REFUSED", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(8\\) 8. VOLUNTEERED: DON'T KNOW", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(9\\) 9. MISSING", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(6\\) 6. OTHER", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(6\\) 6. \\[SEE ELECTION STUDY NOTES\\]", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(7\\) 7. NOT APPLICABLE \\[NO ALLIANCES PERMITTED\\]", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(6\\) 6. NO INTERNATIONAL ELECTION OBSERVERS", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub(" \\(7\\) 7. NOT APPLICABLE", "", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("\\(1\\) 1. VERY SATISFIED \\(2\\) 2. FAIRLY SATISFIED \\(4\\) 4. NOT VERY SATISFIED \\(5\\) 5. NOT AT ALL SATISFIED \\(6\\) 6. NEITHER SATISFIED NOR DISSATISFIED",
+                               "\\(1\\) 1. VERY SATISFIED \\(2\\) 2. FAIRLY SATISFIED \\(3\\) 3. NEITHER SATISFIED NOR DISSATISFIED \\(4\\) 4. NOT VERY SATISFIED \\(5\\) 5. NOT AT ALL SATISFIED",
+                               vars_labels$responses_en)
+vars_labels$responses_en<-trimws(vars_labels$responses_en)
+
+# Remove Extra  and WhiteSpaces respectivelly
+vars_labels$responses_en <- gsub("(\\s|^)-?\\d+\\.\\s", "\\1", vars_labels$responses_en)
+vars_labels$responses_en <- gsub("([).])\\s+", "\\1 ", vars_labels$responses_en)
+
+# Create responses_en_rec
+vars_labels$responses_en_rec<-to_sentence_case(vars_labels$responses_en)
+vars_labels$question_short_en<-to_sentence_case(vars_labels$question_short_en)
+vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$question_short_en)
+
+# EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
 write.csv(vars_labels, "./Data preprocessing/cses_variable_labels.csv", row.names=F)
 
+# # -----------------------------------------------------------------------
 # LABS VECTOR
 # # -----------------------------------------------------------------------
 labs <- vars_labels$column_name
@@ -399,5 +470,7 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
 # # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
 
+# # -----------------------------------------------------------------------
 # END
+# # -----------------------------------------------------------------------
 message("Code ended succesfully")

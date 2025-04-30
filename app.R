@@ -1,11 +1,12 @@
 # # -----------------------------------------------------------------------
 # CSES DATA PLAYGROUND
-# Date: April 25h, 2025
+# Date: April 30th, 2025
 # Author: Robert Vidigal, PhD
-# Purpose: CSES Shiny Data Playground
+# Purpose: CSES Shiny Data Playground based on LAPOP Lab Data Playground
 # Data In: cses_shiny_data.rds / cses_variable_labels.csv / cses_labs.rds
+# and also fonts from /wwww/
 # Data Out: N/A
-# Prev file: see shiny_preprocessing.R
+# Prev file: ./shiny_preprocessing.R
 # Status: On-going
 # Machine: Windows OS
 # # -----------------------------------------------------------------------
@@ -31,8 +32,6 @@ dstrata$no_weight = 1
 
 # Labels data (for DP display)
 vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")
-vars_labels$responses_en_rec <- tolower(vars_labels$responses_en_rec)
-vars_labels$responses_en_rec <- gsub("\\d+\\.", "", vars_labels$responses_en_rec)
 
 # Labs vector (for DP display)
 labs <- readRDS("./cses_labs.rds")
@@ -278,7 +277,7 @@ server <- function(input, output, session) {
   filtered_data <- reactive({
     req(input$module)
     dstrata %>%
-      filter(IMD1008_MOD %in% input$module)
+      dplyr::filter(IMD1008_MOD %in% input$module)
   })
 
   # Observe changes in module input to update wave and pais
@@ -349,8 +348,8 @@ server <- function(input, output, session) {
   # Filtering data based on user's selection (dff)
   dff <- eventReactive(input$go, ignoreNULL = FALSE, {
     dstrata %>%
-      filter(as_factor(wave) %in% input$wave) %>% # year
-      filter(pais_nam %in% input$pais) # country
+      dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
+      dplyr::filter(pais_nam %in% input$pais) # country
   })
 
   # Rendering var caption based on user's var selection
@@ -397,7 +396,7 @@ server <- function(input, output, session) {
   source_info_both <- reactive({
     # Get country abbreviations that match selected country names
     pais_abbr <- dstrata %>%
-      filter(pais_nam %in% input$pais) %>%
+      dplyr::filter(pais_nam %in% input$pais) %>%
       distinct(pais_nam, pais_lab) %>%
       arrange(match(pais_nam, input$pais)) %>%  # preserve input order
       pull(pais_lab)
@@ -416,7 +415,7 @@ server <- function(input, output, session) {
   source_info_pais <- reactive({
     # Get country abbreviations that match selected country names
     pais_abbr <- dstrata %>%
-      filter(pais_nam %in% input$pais) %>%
+      dplyr::filter(pais_nam %in% input$pais) %>%
       distinct(pais_nam, pais_lab) %>%
       arrange(match(pais_nam, input$pais)) %>%  # preserve input order
       pull(pais_lab)
@@ -493,7 +492,7 @@ server <- function(input, output, session) {
         ) %>%
         unnest_wider(col = "outcome_rec") %>%
         mutate(proplabel = paste0(round(prop), "%")) %>%
-        filter(prop != 0)
+        dplyr::filter(prop != 0)
     )
 
     validate(
@@ -540,7 +539,7 @@ server <- function(input, output, session) {
           list(~weighted.ttest.ci(., !!sym(input$weight_type)))
         ) %>%
         unnest_wider(col = "outcome_rec") %>%
-        filter(prop != 0) %>%
+        dplyr::filter(prop != 0) %>%
         mutate(proplabel = paste0(round(prop), "%"))
     )
 
@@ -743,6 +742,7 @@ server <- function(input, output, session) {
                                main_title = title_text,
                                subtitle = paste0("% in selected category ", subtitle_text),
                                ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
+                               label_angle = 90,
                                source_info = source_info_wave()
         )
 
