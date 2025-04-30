@@ -354,6 +354,7 @@ cses_out_labels<-label_all_for_haven(cses_imd, cses_out)
 
 # FIXES FOR NOW
 # # -----------------------------------------------------------------------
+require(labelled)
 cses_out_labels$IMD2004[cses_out_labels$IMD2004==5]<-NA
 
 cses_out_labels$IMD3010 <- labelled(
@@ -455,7 +456,7 @@ vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$questio
 
 # EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
-write.csv(vars_labels, "./Data preprocessing/cses_variable_labels.csv", row.names=F)
+write.csv(vars_labels, "./cses_variable_labels.csv", row.names=F)
 
 # # -----------------------------------------------------------------------
 # LABS VECTOR
@@ -477,3 +478,4 @@ saveRDS(labs, "./cses_labs.rds")
 # END
 # # -----------------------------------------------------------------------
 message("Code ended succesfully")
+
