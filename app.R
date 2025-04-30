@@ -406,9 +406,11 @@ server <- function(input, output, session) {
     wave_display <- paste(input$wave, collapse = ", ")
 
     paste0(", CSES Data Playground\n",
-           "\nCountries: ", str_wrap(pais_display, 125),
-           "\nYears: ", wave_display, "\n",
-           str_wrap(paste0(word(), resp()), 125))
+           str_wrap(paste0("Years: ", wave_display,
+           ". Countries: ", pais_display), 130),
+           "\n\n",
+           str_wrap(paste0(word(), resp()), 130)
+    )
   })
 
   source_info_pais <- reactive({
@@ -422,16 +424,18 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "\nCountries: ",  str_wrap(pais_display, 125),
-           "\n", str_wrap(paste0(word(), resp()), 125)
+    paste0(", CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
+           "\n\n",
+           str_wrap(paste0(word(), resp()), 130)
     )
   })
 
   source_info_wave <- reactive({
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "\nYears: ", str_wrap(wave_display, 125),
-           "\n", str_wrap(paste0(word(), resp()), 125)
+    paste0(", CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
+           "\n\n",
+           str_wrap(paste0(word(), resp()), 130)
     )
   })
 
