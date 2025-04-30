@@ -191,6 +191,7 @@ ui <- fluidPage(
 
       # Add additional breakdown variable in mover plot
       conditionalPanel(
+
         'input.tabs == "Breakdown"',
         selectInput("variable_sec", "Secondary Variable",
                     c("None" = "None",
