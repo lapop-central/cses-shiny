@@ -27,9 +27,6 @@ lapop_fonts() # LAPOP GRAPH STYLE
 # IMD CSES Data (only preselected variables)
 dstrata <- readRDS("./cses_shiny_data.rds")
 
-# No weights
-dstrata$no_weight = 1
-
 # Labels data (for DP display)
 vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")
 
@@ -378,6 +375,15 @@ server <- function(input, output, session) {
     resp()
   })
 
+  # Rendering variable_sec ROs
+  resp_sec <- renderText({
+    vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
+  })
+
+  output$response_sec <- eventReactive(input$go, ignoreNULL = FALSE, {
+    resp_sec()
+  })
+
   # Rendering User selected recode value(s)
   slider_values <- renderText({
     if(input$recode[1] == input$recode[2]) {
@@ -444,6 +450,7 @@ server <- function(input, output, session) {
   # # -----------------------------------------------------------------------
   # must break into data event, graph event, and renderPlot to get download buttons to work
   histd <- eventReactive(input$go, ignoreNULL = FALSE, {
+
     hist_df <- Error(
       dff() %>%
         drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
@@ -571,6 +578,7 @@ server <- function(input, output, session) {
       showNotification(HTML("You cannot break the outcome variable by itself."), type = "error")
       NULL
     } else {
+
       process_data(
         data = dff(),
         outcome_var = outcome(),
@@ -672,7 +680,8 @@ server <- function(input, output, session) {
                           subtitle = "% in selected category",
                           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-                          source_info = ", CSES Data Playground")
+                          source_info = ", CSES Data Playground"
+                          )
     return(moverg)
   })
 

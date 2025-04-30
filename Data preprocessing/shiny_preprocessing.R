@@ -167,10 +167,10 @@ cses_imd$compulsory_vote <- case_when(
 
 # REMOVING SOME SPECIFIC CATEGORIES FOR SIMPLICITY OF ATA PRESENTATION
 # # -----------------------------------------------------------------------
-cses_imd$IMD3010[cses_imd$IMD3010==6]<-3;
-cses_imd$IMD2004[cses_imd$IMD2004==5]<-NA
-cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
-cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
+#cses_imd$IMD3010[cses_imd$IMD3010==6]<-3;
+#cses_imd$IMD2004[cses_imd$IMD2004==5]<-NA
+#cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
+#cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
 
 # WEIGHTS
 # # -----------------------------------------------------------------------
@@ -323,69 +323,71 @@ to_sentence_case <- function(x) {
   }, USE.NAMES = FALSE)
 }
 
-# Function to replace numeric values with labels from another dataset (cses_imd)
-replace_all_with_labels <- function(data, data_out) {
+#  Label output dataset to include the labels through haven package
+label_all_for_haven <- function(data, data_out) {
   label_table <- attr(data, "label.table", exact = TRUE)
-  data_labeled <- data_out  # We will modify the `data_out` dataset
+  data_labeled <- data_out  # Use the manipulated dataset as base
 
   for (var in names(data_out)) {
     if (!is.null(label_table[[var]])) {
-      # Get the original data and labels from cses_imd
-      original <- data[[var]]  # This is from cses_imd, the source dataset
-      labels <- label_table[[var]]
+      values <- label_table[[var]]
 
-      # Reverse the label mapping: names = values, values = labels
-      reversed_labels <- setNames(names(labels), as.character(labels))
-
-      # Clean label text: remove leading number + dot + space (e.g., "1. ")
-      clean_labels <- sub("^\\d+\\.\\s*", "", reversed_labels)
+      # Clean labels: remove number prefixes, apply sentence case
+      clean_labels <- sub("^\\d+\\.\\s*", "", names(values))
       clean_labels <- to_sentence_case(clean_labels)
 
-      # Rebuild mapping with cleaned labels
-      clean_map <- setNames(clean_labels, names(reversed_labels))
+      # Build named vector: values = numeric codes, names = labels
+      labelled_vec <- setNames(as.numeric(values), clean_labels)
 
-      # Get the corresponding values in the data_out dataset (which is `cses_out`)
-      val_char <- as.character(data_out[[var]])
+      # Preserve original variable
+      var_data <- data_out[[var]]
 
-      # Replace the values with corresponding labels (cleaned)
-      replaced <- ifelse(val_char %in% names(clean_map), clean_map[val_char], val_char)
-      replaced[is.na(val_char)] <- NA  # Handle NA values appropriately
-
-      # Keep the numeric values for plotting (by adding a new variable with labels)
-      data_labeled[[paste0(var, "_labeled")]] <- replaced  # Store labeled version
-      data_labeled[[var]] <- as.numeric(data_out[[var]])  # Keep the numeric version for analysis
-
-      # Check the original type (factor or numeric)
-      if (is.factor(original)) {
-        used_labels <- unique(na.omit(replaced))
-        data_labeled[[paste0(var, "_labeled")]] <- factor(replaced, levels = used_labels)
-      } else if (is.numeric(original) || is.integer(original)) {
-        used_labels <- unique(na.omit(replaced))
-        data_labeled[[paste0(var, "_labeled")]] <- factor(replaced, levels = used_labels)
-      } else {
-        data_labeled[[paste0(var, "_labeled")]] <- replaced
-      }
+      # Convert to haven::labelled
+      data_labeled[[var]] <- labelled(var_data, labels = labelled_vec)
     }
   }
 
   return(data_labeled)
 }
 
-#cses_out_labels<-replace_all_with_labels(cses_imd, cses_out)
+cses_out_labels<-label_all_for_haven(cses_imd, cses_out)
 
-### Releveling Fixes
-#levels(cses_out_labels$IMD5007_labeled)[levels(cses_out_labels$IMD5007_labeled) == "0"] <- "No"
-#levels(cses_out_labels$IMD3010_labeled)[levels(cses_out_labels$IMD3010_labeled) == "3"] <- "Neither satisfied nor dissatisfied"
+# FIXES FOR NOW
+# # -----------------------------------------------------------------------
+cses_out_labels$IMD2004[cses_out_labels$IMD2004==5]<-NA
+
+cses_out_labels$IMD3010 <- labelled(
+  x = replace(cses_out_labels$IMD3010, cses_out_labels$IMD3010 == 6, 3),
+  labels = c(
+    "Very satisfied"         = 1,
+    "Satisfied"              = 2,
+    "Neither"                = 3,
+    "Not very satisfied"     = 4,
+    "Not all satisfied"      = 5
+  )
+)
+
+cses_out_labels$IMD5007 <- labelled(
+  x = replace(cses_out_labels$IMD5007, cses_out_labels$IMD5007 == 5, 0),
+  labels = c(
+    "No"                     = 0,
+    "Yes; no sanctions"      = 3,
+    "Yes; weakly enforced"   = 2,
+    "Yes; strictly enforced" = 1
+  )
+)
+
+cses_out_labels$IMD5052_2<-round(cses_out_labels$IMD5052_2, 1)
 
 # Exporting DATA (.rds lighter file storage)
 # # -----------------------------------------------------------------------
 # MERGE PAIS_LAB TO CSES_OUT BEFORE EXPORT
 pais_lab_merge<-subset(pais_lab, select=c("pais_lab", "pais_nam"))
-cses_out <- merge(cses_out, pais_lab_merge, by = "pais_lab")
-str(cses_out)
+cses_out_labels <- merge(cses_out_labels, pais_lab_merge, by = "pais_lab")
+str(cses_out_labels)
 
 # EXPORT
-saveRDS(cses_out, "./cses_shiny_data.rds")
+saveRDS(cses_out_labels, "./cses_shiny_data.rds")
 
 # # -----------------------------------------------------------------------
 # EXTRACTING RESPONSE OPTIONS FOR VARS_LABELS DATA
@@ -444,6 +446,7 @@ vars_labels$responses_en<-trimws(vars_labels$responses_en)
 # Remove Extra  and WhiteSpaces respectivelly
 vars_labels$responses_en <- gsub("(\\s|^)-?\\d+\\.\\s", "\\1", vars_labels$responses_en)
 vars_labels$responses_en <- gsub("([).])\\s+", "\\1 ", vars_labels$responses_en)
+vars_labels$responses_en<-gsub("\\(5\\) NO", "\\(0\\) NO", vars_labels$responses_en) # COMPULSORY VOTE IMD5007
 
 # Create responses_en_rec
 vars_labels$responses_en_rec<-to_sentence_case(vars_labels$responses_en)
