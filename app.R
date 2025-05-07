@@ -1,6 +1,6 @@
 # # -----------------------------------------------------------------------
 # CSES DATA PLAYGROUND
-# Date: April 30th, 2025
+# Date: May 35h, 2025
 # Author: Robert Vidigal, PhD
 # Purpose: CSES Shiny Data Playground based on LAPOP Lab Data Playground
 # Data In: cses_shiny_data.rds / cses_variable_labels.csv / cses_labs.rds
@@ -108,20 +108,20 @@ process_data <- function(data, outcome_var, recode_range,
 # # -----------------------------------------------------------------------
 ui <- fluidPage(
 
-  titlePanel("CSES Data Playground"),
+  titlePanel("CSES Data Playground (beta version)"),
 
   sidebarLayout(
 
     # Sidebar panel for inputs ----
     sidebarPanel(
 
-      selectInput("variable", "Variable",
+      selectInput("variable", "Outcome",
                   labs[order(names(labs))],
                   selected = "IMD3010"),
 
       # Default picks most recent module
       pickerInput(inputId = "module",
-                  label = "CSES Module",
+                  label = "Module",
                   choices = sort(levels(as_factor(dstrata$IMD1008_MOD)[!is.na(dstrata$IMD1008_MOD)])),
                   selected = c("MODULE 5"),
                   options = list(`actions-box` = TRUE),
@@ -175,7 +175,7 @@ ui <- fluidPage(
                   multiple = TRUE),
 
       # WEIGHT selection radio buttons ----
-      radioButtons("weight_type", "Weighting Variable",
+      radioButtons("weight_type", "Weights",
                    choices = list("Unweighted" = "no_weight",
                                   "Demographic weight" = "weight_demographic",
                                   "Sample weight" = "weight_sample"),
@@ -199,7 +199,7 @@ ui <- fluidPage(
         checkboxGroupInput("demog", "Demographic Variables",
                            c("Gender" = "gendermc",
                              "Age" = "age",
-                             "Wealth" = "wealth",
+                             "Income" = "wealth",
                              "Education" = "edre",
                              "Urban/Rural" = "ur"),
                            selected = c("gendermc", "age", "edre"), # GENDERMC?
@@ -336,7 +336,7 @@ server <- function(input, output, session) {
 
   output$sliderUI <- renderUI({
     sliderInput(inputId = "recode",
-                label = "Response values included in percentage",
+                label = "Outcome values included in percentage",
                 min = min(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
                 max = max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
                 value = sliderParams$valuex,
