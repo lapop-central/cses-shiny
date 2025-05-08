@@ -387,6 +387,12 @@ pais_lab_merge<-subset(pais_lab, select=c("pais_lab", "pais_nam"))
 cses_out_labels <- merge(cses_out_labels, pais_lab_merge, by = "pais_lab")
 str(cses_out_labels)
 
+# REMOVING CONTINUOUS VARS FOR NOW...
+cses_out_labels<-subset(cses_out_labels, select=-c(IMD3001_TS, IMD5054_2, IMD5057_1, IMD5035,
+                                     IMD5056_2, IMD5055_1, IMD5053_1, IMD5052_2,
+                                     IMD5006_2, IMD5006_1, IMD5058_1, IMD5049))
+
+
 # EXPORT
 saveRDS(cses_out_labels, "./cses_shiny_data.rds")
 
@@ -456,6 +462,12 @@ vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$questio
 
 # EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
+# REMOVING CONTINUOUS VARS FOR NOW...
+vars_labels <- vars_labels[!vars_labels$column_name %in%
+                                   c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+                                     "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
+                                     "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049"), ]
+
 write.csv(vars_labels, "./cses_variable_labels.csv", row.names=F)
 
 # # -----------------------------------------------------------------------
@@ -472,6 +484,10 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
 
 # FINAL EXPORT OF LABELS
 # # -----------------------------------------------------------------------
+# REMOVING CONTINUOUS VARS FOR NOW...
+labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+                                   "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
+                                   "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
 saveRDS(labs, "./cses_labs.rds")
 
 # # -----------------------------------------------------------------------

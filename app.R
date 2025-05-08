@@ -16,11 +16,10 @@
 library(lapop)
 library(haven)
 library(dplyr)
-library(stringr)
-library(shiny)
-library(shinyWidgets)
-library(Hmisc)
 library(tidyr)
+library(stringr)
+library(shinyWidgets)
+library(Hmisc, exclude = c("src", "summarize"))
 
 lapop_fonts() # LAPOP GRAPH STYLE
 
@@ -243,6 +242,16 @@ ui <- fluidPage(
 # The server function will be called when each client (browser) loads the app.
 server <- function(input, output, session) {
 
+  observe({
+    req(input$variable)
+    if (!input$variable %in% names(dstrata)) {
+      showNotification("Selected variable not found in data!", type = "error")
+    }
+    if (!input$weight_type %in% names(dstrata)) {
+      showNotification("Selected weight column not found!", type = "error")
+    }
+  })
+
   # Triggers "go" between server and ui to generate default plots
   observe({
     if (!is.null(input$module) && !is.null(input$pais) && !is.null(input$wave)) {
@@ -411,11 +420,13 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n",
-           str_wrap(paste0("Years: ", wave_display,
-           ". Countries: ", pais_display), 130),
-           "\n\n",
-           str_wrap(paste0(word(), resp()), 130)
+    paste0(
+      "Source: CSES Data Playground\n\n",  # Extra newline after source
+      str_wrap(paste0(
+        "Years: ", paste(input$wave, collapse = ", "),
+        ". Countries: ", paste(pais_abbr, collapse = ", ")), 130),
+      "\n\n",  # Double newline before question
+      str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
 
@@ -430,57 +441,57 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
+    paste0("Source: CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
            "\n\n",
-           str_wrap(paste0(word(), resp()), 130)
+           str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
 
   source_info_wave <- reactive({
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0(", CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
+    paste0("Source: CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
            "\n\n",
-           str_wrap(paste0(word(), resp()), 130)
+           str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
-
-#################################################### NEEED TO REMOVE LAPOP LAB
 
   # Histogram
   # # -----------------------------------------------------------------------
   # must break into data event, graph event, and renderPlot to get download buttons to work
-  histd <- eventReactive(input$go, ignoreNULL = FALSE, {
+  histd <- eventReactive(input$go, {
+    req(dff(), input$variable, input$weight_type)
 
-    hist_df <- Error(
+    if (!input$variable %in% names(dff()) ||
+        !input$weight_type %in% names(dff())) {
+      return(NULL)
+    }
+
+    tryCatch({
       dff() %>%
-        drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
-        group_by(cat = haven::as_factor(!!sym(outcome()))) %>%
+        drop_na(!!sym(input$variable), !!sym(input$weight_type)) %>%
+        group_by(cat = haven::as_factor(!!sym(input$variable))) %>%
         summarise(w = sum(!!sym(input$weight_type), na.rm = TRUE)) %>%
         mutate(
           prop = w / sum(w) * 100,
           proplabel = paste0(round(prop), "%"),
           cat = str_wrap(as.character(cat), width = 25)
         )
-    )
-
-    validate(
-      need(hist_df, "Error: no data available. Please verify that this question was asked in this country/year combination.")
-    )
-    return(hist_df)
+    }, error = function(e) {
+      NULL
+    })
   })
 
   histg <- eventReactive(input$go, ignoreNULL = FALSE, {
     histg <- lapop_hist(histd(),
                         ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                        source_info = ", CSES Data Playground")
+                        source_info = "Source: CSES Data Playground")
     return(histg)
   })
 
   output$hist <- renderPlot({
     return(histg())
   })
-
 
   # Time-series
   # # -----------------------------------------------------------------------
@@ -520,7 +531,7 @@ server <- function(input, output, session) {
                    ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                    #label_vjust = -1.5,
                    label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                   source_info = ", CSES Data Playground",
+                   source_info = "Source: CSES Data Playground",
                    subtitle = "% in selected category")
     return(tsg)
   })
@@ -562,7 +573,7 @@ server <- function(input, output, session) {
     ccg = lapop_cc(ccd(), sort = "hi-lo",
                    subtitle = "% in selected category",
                    ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
-                   source_info = ", CSES Data Playground")
+                   source_info = "Source: CSES Data Playground")
     return(ccg)
   })
 
@@ -681,7 +692,7 @@ server <- function(input, output, session) {
                           subtitle = "% in selected category",
                           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-                          source_info = ", CSES Data Playground"
+                          source_info = "Source: CSES Data Playground"
                           )
     return(moverg)
   })
@@ -792,19 +803,23 @@ server <- function(input, output, session) {
     content = function(file) {
       if(input$tabs == "Histogram") {
         write.csv(histd(), file)
-        showNotification(HTML("Histogram file download complete ✓ "), type = "message")
+        showNotification(HTML("Histogram file download complete ✓ "),
+                         type = "message")
 
       } else if (input$tabs == "Time Series") {
         write.csv(tsd(), file)
-        showNotification(HTML("Time series file download complete ✓ "), type = "message")
+        showNotification(HTML("Time series file download complete ✓ "),
+                         type = "message")
 
       } else if (input$tabs == "Cross Country") {
         write.csv(ccd(), file)
-        showNotification(HTML("Cross country file download complete ✓ "), type = "message")
+        showNotification(HTML("Cross country file download complete ✓ "),
+                         type = "message")
 
       } else {
         write.csv(moverd(), file)
-        showNotification(HTML("Break down file download complete ✓ "), type = "message")
+        showNotification(HTML("Break down file download complete ✓ "),
+                         type = "message")
 
       }
     }
