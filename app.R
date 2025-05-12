@@ -709,10 +709,16 @@ server <- function(input, output, session) {
 # # -----------------------------------------------------------------------
   output$downloadPlot <- downloadHandler(
     filename = function(file) {
-      ifelse(input$tabs == "Histogram", paste0("hist_", outcome(),".svg"),
-             ifelse(input$tabs == "Time Series",  paste0("ts_", outcome(),".svg"),
-                    ifelse(input$tabs == "Cross Country",  paste0("cc_", outcome(),".svg"),
-                           paste0("mover_", outcome(),".svg"))))
+
+      weight_suffix <- switch(input$weight_type, # Add weight type to file export
+                              "no_weight" = "unweighted",
+                              "weight_demographic" = "demogweighted",
+                              "weight_sample" = "sampleweighted")
+
+      ifelse(input$tabs == "Histogram", paste0("hist_", outcome(), "_", weight_suffix, ".svg"),
+             ifelse(input$tabs == "Time Series",  paste0("ts_", outcome(), "_", weight_suffix, ".svg"),
+                    ifelse(input$tabs == "Cross Country",  paste0("cc_", outcome(), "_", weight_suffix, ".svg"),
+                           paste0("mover_", outcome(), "_", weight_suffix, ".svg")))) # Add plot type to file export
     },
 
     content = function(file) {
