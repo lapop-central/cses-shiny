@@ -1,7 +1,7 @@
 # cses-shiny
 CSES Data Playground
-Robert Vidigal, Ph.D.
-Version 1.0
+by Robert Vidigal, Ph.D.
+Version 0.5 (beta)
 
 ## CSES Modules
 ### Module 1 (1996–2001) Theme: System Performance
