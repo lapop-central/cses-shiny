@@ -30,6 +30,9 @@ Included 50 election studies in 41 countries (e.g., Canada 2008, Chile 2009).
 Investigated voter preferences for public policy and institutional mediation.
 Covered 45 election studies in 39 countries (e.g., Greece 2012, Turkey 2015).
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/lapop-central/lapop-viz/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/lapop-central/cses-shiny/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
 
 
 ### Module 5 (2016–2021) Theme: Attitudes Toward Political Elites and "Out Groups"
