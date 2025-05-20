@@ -15,11 +15,11 @@
 # # -----------------------------------------------------------------------
 library(lapop)
 library(haven)
-library(dplyr)
+suppressPackageStartupMessages(library(dplyr))
 library(tidyr)
 library(stringr)
 library(shinyWidgets)
-library(Hmisc, exclude = c("src", "summarize"))
+suppressPackageStartupMessages(library(Hmisc, exclude = c("src", "summarize", "units", "format.pval")))
 
 lapop_fonts() # LAPOP GRAPH STYLE
 
@@ -808,22 +808,22 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       if(input$tabs == "Histogram") {
-        write.csv(histd(), file)
+        write.csv(histd(), file, row.names=F)
         showNotification(HTML("Histogram file download complete ✓ "),
                          type = "message")
 
       } else if (input$tabs == "Time Series") {
-        write.csv(tsd(), file)
+        write.csv(tsd(), file, row.names=F)
         showNotification(HTML("Time series file download complete ✓ "),
                          type = "message")
 
       } else if (input$tabs == "Cross Country") {
-        write.csv(ccd(), file)
+        write.csv(ccd(), file, row.names=F)
         showNotification(HTML("Cross country file download complete ✓ "),
                          type = "message")
 
       } else {
-        write.csv(moverd(), file)
+        write.csv(moverd(), file, row.names=F)
         showNotification(HTML("Break down file download complete ✓ "),
                          type = "message")
 
