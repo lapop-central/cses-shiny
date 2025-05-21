@@ -269,6 +269,10 @@ server <- function(input, output, session) {
     input$variable
   })
 
+  outcome_code <- reactive({
+    vars_labels$column_name[which(vars_labels$column_name == paste(outcome()))]
+  })
+
   variable_sec <- reactive({
     input$variable_sec
   })
@@ -426,7 +430,7 @@ server <- function(input, output, session) {
         "Years: ", paste(input$wave, collapse = ", "),
         ". Countries: ", paste(pais_abbr, collapse = ", ")), 130),
       "\n\n",  # Double newline before question
-      str_wrap(paste0(word(), " ", resp()), 130)
+      str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
     )
   })
 
@@ -443,7 +447,7 @@ server <- function(input, output, session) {
 
     paste0("Source: CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
            "\n\n",
-           str_wrap(paste0(word(), " ", resp()), 130)
+           str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
     )
   })
 
@@ -452,7 +456,7 @@ server <- function(input, output, session) {
 
     paste0("Source: CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
            "\n\n",
-           str_wrap(paste0(word(), " ", resp()), 130)
+           str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
     )
   })
 
