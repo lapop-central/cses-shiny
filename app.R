@@ -371,9 +371,11 @@ server <- function(input, output, session) {
   output$caption <- eventReactive(input$go, ignoreNULL = FALSE, {
     cap()
   })
-  # Rendering wording based on user's var selection
+
+  # Rendering variable code + wording based on user's var selection
   word <- renderText({
-    vars_labels$question_en[which(vars_labels$column_name == formulaText())]
+    paste0(toupper(vars_labels$column_name[which(vars_labels$column_name == formulaText())]), ". ",
+           vars_labels$question_en[which(vars_labels$column_name == formulaText())])
   })
 
   output$wording <- eventReactive(input$go, ignoreNULL = FALSE, {
@@ -430,7 +432,7 @@ server <- function(input, output, session) {
         "Years: ", paste(input$wave, collapse = ", "),
         ". Countries: ", paste(pais_abbr, collapse = ", ")), 130),
       "\n\n",  # Double newline before question
-      str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
+      str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
 
@@ -447,7 +449,7 @@ server <- function(input, output, session) {
 
     paste0("Source: CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
            "\n\n",
-           str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
+           str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
 
@@ -456,7 +458,7 @@ server <- function(input, output, session) {
 
     paste0("Source: CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
            "\n\n",
-           str_wrap(paste0(toupper(outcome_code()), ". ", word(), " ", resp()), 130)
+           str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
 
