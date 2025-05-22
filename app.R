@@ -3,7 +3,9 @@
 # Date: May 35h, 2025
 # Author: Robert Vidigal, PhD
 # Purpose: CSES Shiny Data Playground based on LAPOP Lab Data Playground
-# Data In: cses_shiny_data.rds / cses_variable_labels.csv / cses_labs.rds
+# Data In: cses_shiny_data.rds
+# cses_variable_labels.csv
+# cses_labs.rda
 # and also fonts from /wwww/
 # Data Out: N/A
 # Prev file: ./shiny_preprocessing.R
@@ -24,7 +26,9 @@ suppressPackageStartupMessages(library(Hmisc, exclude = c("src", "summarize", "u
 lapop_fonts() # LAPOP GRAPH STYLE
 
 # IMD CSES Data (only preselected variables)
-dstrata <- readRDS("./cses_shiny_data.rds")
+# # -----------------------------------------------------------------------
+#dstrata <- readRDS("./cses_shiny_data.rds") # 102 MB, rda below performs better
+load(file="./cses_shiny_data.rda"); dstrata<-cses_shiny_data; rm(cses_shiny_data)
 
 # Labels data (for DP display)
 vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")

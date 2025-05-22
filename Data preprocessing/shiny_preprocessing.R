@@ -393,8 +393,15 @@ cses_out_labels<-subset(cses_out_labels, select=-c(IMD3001_TS, IMD5054_2, IMD505
                                      IMD5006_2, IMD5006_1, IMD5058_1, IMD5049))
 
 
-# EXPORT
+# EXPORT RDS
 saveRDS(cses_out_labels, "./cses_shiny_data.rds")
+
+# EXPORT RDA (MAX COMPRESSION)
+cses_shiny_data<-cses_out_labels
+save(cses_shiny_data, file="cses_shiny_data.rda")
+
+tools::resaveRdaFiles("./cses_shiny_data.rda", compress = "xz")
+tools::checkRdaFiles("./cses_shiny_data.rda")
 
 # # -----------------------------------------------------------------------
 # EXTRACTING RESPONSE OPTIONS FOR VARS_LABELS DATA
@@ -428,7 +435,6 @@ vars_labels <- vars_labels %>%
   left_join(qword_ro, by = "column_name", suffix = c(".old", "")) %>%
   # Select columns from qword_ro and non-duplicated columns from vars_labels
   select(-contains(".old"))
-
 
 # REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
 
