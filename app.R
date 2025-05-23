@@ -117,6 +117,7 @@ ui <- fluidPage(
 
     # Sidebar panel for inputs ----
     sidebarPanel(
+      width = 3,
 
       selectInput("variable", "Outcome",
                   labs[order(names(labs))],
