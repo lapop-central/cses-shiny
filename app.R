@@ -206,7 +206,7 @@ ui <- fluidPage(
                              "Income" = "wealth",
                              "Education" = "edre",
                              "Urban/Rural" = "ur"),
-                           selected = c("gendermc", "age", "edre"), # GENDERMC?
+                           selected = c("gendermc", "age", "edre"),
                            inline = TRUE)
       ),
 
@@ -265,6 +265,16 @@ server <- function(input, output, session) {
       })
     }
   })
+
+   observeEvent(input$demog, {
+    # Check the number of selected variables
+    if (length(input$demog) > 3) {
+      # Show a warning message
+      showNotification(HTML("You should only select a maximum of 3 demographic variables to plot."), type = "warning")
+    }
+  })
+
+# # -----------------------------------------------------------------------
 
   formulaText <- reactive({
     paste(input$variable)
