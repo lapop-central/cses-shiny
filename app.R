@@ -444,8 +444,8 @@ server <- function(input, output, session) {
     paste0(
       "Source: CSES Data Playground\n\n",  # Extra newline after source
       str_wrap(paste0(
-        "Years: ", paste(input$wave, collapse = ", "),
-        ". Countries: ", paste(pais_abbr, collapse = ", ")), 130),
+        "Years selected: ", paste(input$wave, collapse = ", "),
+        ". Countries selected: ", paste(pais_abbr, collapse = ", ")), 130),
       "\n\n",  # Double newline before question
       str_wrap(paste0(word(), " ", resp()), 130)
     )
@@ -462,7 +462,7 @@ server <- function(input, output, session) {
     pais_display <- paste(pais_abbr, collapse = ", ")
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0("Source: CSES Data Playground\n", "Countries: ",  str_wrap(pais_display, 130),
+    paste0("Source: CSES Data Playground\n", "Countries selected: ",  str_wrap(pais_display, 130),
            "\n\n",
            str_wrap(paste0(word(), " ", resp()), 130)
     )
@@ -471,7 +471,7 @@ server <- function(input, output, session) {
   source_info_wave <- reactive({
     wave_display <- paste(input$wave, collapse = ", ")
 
-    paste0("Source: CSES Data Playground\n", "Years: ", str_wrap(wave_display, 130),
+    paste0("Source: CSES Data Playground\n", "Years selected: ", str_wrap(wave_display, 130),
            "\n\n",
            str_wrap(paste0(word(), " ", resp()), 130)
     )
