@@ -78,6 +78,16 @@ weighted.ttest.ci <- function(x, weights) {
   return(result)
 }
 
+# helper for missing country-year by outcome_var
+# # -----------------------------------------------------------------------
+
+get_missing_combinations <- function(data, outcome_var) {
+  data %>%
+    group_by(pais_nam, wave = as.character(as_factor(wave))) %>%
+    summarise(non_na = sum(!is.na(.data[[outcome_var]])), .groups = "drop") %>%
+    filter(non_na == 0)
+} # -----------------------------------------------------------------------
+
 # Helper function for mover plot (weighting and handling NAs)
 # # -----------------------------------------------------------------------
 process_data <- function(data, outcome_var, recode_range,
@@ -427,6 +437,33 @@ server <- function(input, output, session) {
   output$selected_values <- eventReactive(input$go, ignoreNULL = FALSE, {
     slider_values()
   })
+
+  # WARNING FOR MISSING COMBOS
+  # # -----------------------------------------------------------------------
+  observeEvent(input$go, {
+    missing <- get_missing_combinations(dff(), outcome())
+
+    if (nrow(missing) > 0) {
+
+      # Join with country abbreviations
+      missing <- missing %>%
+        left_join(
+          dstrata %>% distinct(pais_nam, pais_lab),
+          by = "pais_nam"
+        ) %>%
+        mutate(
+          combo_label = paste0(pais_lab, wave)  # e.g., BRA2006
+        )
+
+      showNotification(
+        HTML(paste0("⚠️ Attention: the following country-year combinations have no data for <b>", outcome(), "</b><br>",
+               paste(missing$combo_label, collapse = ", "))),
+        type = "warning", duration = 30
+      )
+    }
+  })
+
+
 
 # SOURCE INFO WITH PAIS and WAVE
 # # -----------------------------------------------------------------------
