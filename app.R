@@ -20,7 +20,7 @@ library(haven)
 suppressPackageStartupMessages(library(dplyr))
 library(tidyr)
 library(stringr)
-library(shinyWidgets)
+require(shiny); library(shinyWidgets)
 suppressPackageStartupMessages(library(Hmisc, exclude = c("src", "summarize", "units", "format.pval")))
 
 lapop_fonts() # LAPOP GRAPH STYLE
@@ -78,16 +78,49 @@ weighted.ttest.ci <- function(x, weights) {
   return(result)
 }
 
-# helper for missing country-year by outcome_var
+# Helper for missing country-year by outcome_var
 # # -----------------------------------------------------------------------
+#get_missing_combinations <- function(data, outcome_var) {
+#  data %>%
+#    group_by(pais_nam, wave = as.character(as_factor(wave))) %>%
+#    summarise(non_na = sum(!is.na(.data[[outcome_var]])), .groups = "drop") %>%
+#    filter(non_na == 0)
+#}
+get_missing_combinations <- function(data, outcome_var, wave_var,
+                                     selected_waves, selected_countries) {
+  # Convert wave values to string using haven labels
+  data <- data %>%
+    mutate(wave_str = as.character(haven::as_factor(.data[[wave_var]])))
 
-get_missing_combinations <- function(data, outcome_var) {
-  data %>%
-    group_by(pais_nam, wave = as.character(as_factor(wave))) %>%
-    summarise(non_na = sum(!is.na(.data[[outcome_var]])), .groups = "drop") %>%
-    filter(non_na == 0)
-} # -----------------------------------------------------------------------
+  # Build the full country-wave grid
+  all_combos <- expand.grid(
+    pais_nam = selected_countries,
+    wave = selected_waves,
+    stringsAsFactors = FALSE
+  )
 
+  # Subset only relevant countries
+  data <- data %>%
+    filter(pais_nam %in% selected_countries)
+
+  # Summarize: how many valid (non-NA and not 0) values exist per combo
+  summary <- data %>%
+    group_by(pais_nam, wave = wave_str) %>%
+    summarise(
+      n_valid = sum(!is.na(.data[[outcome_var]]) & .data[[outcome_var]] != 0),
+      .groups = "drop"
+    )
+
+  # Merge and detect missing
+  missing <- all_combos %>%
+    left_join(summary, by = c("pais_nam", "wave")) %>%
+    filter(is.na(n_valid) | n_valid == 0) %>%
+    select(pais_nam, wave)
+
+  return(missing)
+}
+
+# -----------------------------------------------------------------------
 # Helper function for mover plot (weighting and handling NAs)
 # # -----------------------------------------------------------------------
 process_data <- function(data, outcome_var, recode_range,
@@ -294,6 +327,10 @@ server <- function(input, output, session) {
     input$variable
   })
 
+  wave <- reactive({
+    input$wave
+  })
+
   outcome_code <- reactive({
     vars_labels$column_name[which(vars_labels$column_name == paste(outcome()))]
   })
@@ -344,7 +381,7 @@ server <- function(input, output, session) {
   # 3-point: 3-3
   # 4-point: 1-2
   # 5-point: 4-5
-  # 6-point:
+  # 6-point: 3-3
   # 7-point: 5-7
   # 10-point: 8-10
   # ALL OTHER: MEAN
@@ -441,28 +478,47 @@ server <- function(input, output, session) {
   # WARNING FOR MISSING COMBOS
   # # -----------------------------------------------------------------------
   observeEvent(input$go, {
-    missing <- get_missing_combinations(dff(), outcome())
+    req(input$wave, input$pais)
 
+    # Normalize wave and country inputs
+    selected_waves <- as.character(input$wave)
+    selected_countries <- as.character(input$pais)
+
+    # Step 1: Compute missing combinations
+    missing <- get_missing_combinations(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      selected_waves = selected_waves,
+      selected_countries = selected_countries
+    )
+
+    # Step 2: Trigger warning if any missing
     if (nrow(missing) > 0) {
-
-      # Join with country abbreviations
+      # Add country labels
       missing <- missing %>%
-        left_join(
-          dstrata %>% distinct(pais_nam, pais_lab),
-          by = "pais_nam"
-        ) %>%
-        mutate(
-          combo_label = paste0(pais_lab, wave)  # e.g., BRA2006
-        )
+        left_join(dstrata %>% distinct(pais_nam, pais_lab), by = "pais_nam")
 
+      # Format the message
+      warning_text <- missing %>%
+        group_by(wave) %>%
+        summarise(
+          country_list = paste(sort(unique(pais_lab)), collapse = ", "),
+          .groups = "drop"
+        ) %>%
+        mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
+        pull(combo_label) %>%
+        paste(collapse = "<br>")
+
+      # Show the notification
       showNotification(
-        HTML(paste0("⚠️ Attention: the following country-year combinations have no data for <b>", outcome(), "</b><br>",
-               paste(missing$combo_label, collapse = ", "))),
-        type = "warning", duration = 30
+        HTML(paste0("⚠️ Attention: the following country-years have no data for <b>",
+                    outcome(), "</b><br>", warning_text)),
+        type = "warning",
+        duration = 20
       )
     }
   })
-
 
 
 # SOURCE INFO WITH PAIS and WAVE
