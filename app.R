@@ -192,7 +192,17 @@ ui <- fluidPage(
          .checkbox-inline+.checkbox-inline {
                     margin-left: 0px;
                     margin-right: 10px;
-          }
+         }
+    .shiny-notification {
+      width: 615px !important; /* max width */
+      max-height: 150px; /* max height */
+      word-wrap: break-word;
+      white-space: normal;
+      overflow-y: auto; /* scrollbar */
+      right: 330px !important; /* shift away from right edge */
+      box-sizing: border-box;
+      font-size: 14px;
+    }
         "
           )
         )
@@ -508,12 +518,12 @@ server <- function(input, output, session) {
         ) %>%
         mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
         pull(combo_label) %>%
-        paste(collapse = "<br>")
+        paste(collapse = "<br><br>")
 
       # Show the notification
       showNotification(
-        HTML(paste0("⚠️ Attention: the following country-years have no data for <b>",
-                    outcome(), "</b><br>", warning_text)),
+        HTML(paste0("<span style='font-size:16px;'>⚠️ Warning: the following country-years have no data for <b>",
+                    outcome(), "</span></b><br><br>", warning_text)),
         type = "warning",
         duration = 20
       )
