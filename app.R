@@ -17,6 +17,7 @@
 # # -----------------------------------------------------------------------
 library(lapop)
 library(haven)
+library(bslib)
 suppressPackageStartupMessages(library(dplyr))
 library(tidyr)
 library(stringr)
@@ -149,12 +150,33 @@ process_data <- function(data, outcome_var, recode_range,
   return(processed_data)
 }
 
+library(bslib)
+
+cses_theme <- bs_theme(
+  version = 5,
+  bootswatch = "cosmo",
+  bg = "#ffffff",
+  fg = "#212529",
+  primary = "#C4722A",
+  secondary = "#C4722A",
+  success = "#28a745",
+  info = "#0066cc",
+  warning = "#dc3545",
+  danger = "#dc3545",
+  #base_font = font_google("Open Sans"),
+  #heading_font = font_google("Roboto Slab"),
+  #code_font = font_google("Fira Mono"),
+  #font_scale = 1
+)
+
 # # -----------------------------------------------------------------------
 # Creating User Interface UI!
 # # -----------------------------------------------------------------------
 ui <- fluidPage(
+  theme = cses_theme,
 
-  titlePanel("CSES Data Playground (beta version)"),
+  tags$h2("CSES Data Playground (beta version)",
+          style = "color: #C4722A; font-weight: bold; font-size: 36px;"),
 
   sidebarLayout(
 
@@ -184,8 +206,8 @@ ui <- fluidPage(
       # This fixes a formatting issue with checkboxGroupInput() below
       tags$head(
         tags$style(
-          HTML(
-            ".checkbox-inline {
+          HTML("
+          .checkbox-inline {
                     margin-left: 0px;
                     margin-right: 10px;
           }
@@ -263,7 +285,12 @@ ui <- fluidPage(
                            inline = TRUE)
       ),
 
-      actionButton("go", "Generate")
+      #actionButton("go", "Generate") # Include button in UI
+      tags$div(
+        style = "display: none;",
+        actionButton("go", "Generate")
+      )
+
 
     ),
 
@@ -287,6 +314,7 @@ ui <- fluidPage(
       ),
       br(),
       fluidRow(column(12, "",
+                      uiOutput("missing_warning_card"),
                       downloadButton(outputId = "downloadPlot", label = "Download Figure"),
                       downloadButton(outputId = "downloadTable", label = "Download Table")))
     )
@@ -487,8 +515,8 @@ server <- function(input, output, session) {
 
   # WARNING FOR MISSING COMBOS
   # # -----------------------------------------------------------------------
-  observeEvent(input$go, {
-    req(input$wave, input$pais)
+  output$missing_warning_card <- renderUI({
+    req(input$go > 0, input$wave, input$pais)
 
     # Normalize wave and country inputs
     selected_waves <- as.character(input$wave)
@@ -503,33 +531,41 @@ server <- function(input, output, session) {
       selected_countries = selected_countries
     )
 
-    # Step 2: Trigger warning if any missing
-    if (nrow(missing) > 0) {
-      # Add country labels
-      missing <- missing %>%
-        left_join(dstrata %>% distinct(pais_nam, pais_lab), by = "pais_nam")
+    # Step 2: Skip if none missing
+    if (nrow(missing) == 0) return(NULL)
 
-      # Format the message
-      warning_text <- missing %>%
-        group_by(wave) %>%
-        summarise(
-          country_list = paste(sort(unique(pais_lab)), collapse = ", "),
-          .groups = "drop"
-        ) %>%
-        mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
-        pull(combo_label) %>%
-        paste(collapse = "<br><br>")
+    # Add country abbreviations
+    missing <- missing %>%
+      left_join(dstrata %>% distinct(pais_nam, pais_lab), by = "pais_nam")
 
-      # Show the notification
-      showNotification(
-        HTML(paste0("<span style='font-size:16px;'>⚠️ Warning: the following country-years have no data for <b>",
-                    outcome(), "</span></b><br><br>", warning_text)),
-        type = "warning",
-        duration = 20
-      )
-    }
+    # Format message: YEAR: COUNTRIES
+    warning_text <- missing %>%
+      group_by(wave) %>%
+      summarise(
+        country_list = paste(sort(unique(pais_lab)), collapse = ", "),
+        .groups = "drop"
+      ) %>%
+      mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
+      pull(combo_label) %>%
+      paste(collapse = "<br>")
+
+    # Display warning card
+    tags$div(
+      style = "
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      background-color: #fff8e1;
+      margin-bottom: 20px;
+      max-height: 120px;
+      overflow-y: auto;
+      ",
+      HTML(paste0(
+        "<span style='font-size:16px; color: #856404;'>⚠️ <b>Warning:</b> The following country-years have no data for <b>",
+        outcome(), "</b>:<br>", warning_text
+      ))
+    )
   })
-
 
 # SOURCE INFO WITH PAIS and WAVE
 # # -----------------------------------------------------------------------
@@ -583,7 +619,7 @@ server <- function(input, output, session) {
   # Histogram
   # # -----------------------------------------------------------------------
   # must break into data event, graph event, and renderPlot to get download buttons to work
-  histd <- eventReactive(input$go, {
+  histd <- reactive({
     req(dff(), input$variable, input$weight_type)
 
     if (!input$variable %in% names(dff()) ||
@@ -606,12 +642,9 @@ server <- function(input, output, session) {
     })
   })
 
-  histg <- eventReactive(input$go, ignoreNULL = FALSE, {
-    histg <- lapop_hist(histd(),
+  histg <- reactive({lapop_hist(histd(),
                         ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                        source_info = "Source: CSES Data Playground")
-    return(histg)
-  })
+                        source_info = "Source: CSES Data Playground")})
 
   output$hist <- renderPlot({
     return(histg())
@@ -619,7 +652,7 @@ server <- function(input, output, session) {
 
   # Time-series
   # # -----------------------------------------------------------------------
-  tsd <- eventReactive(input$go, ignoreNULL = FALSE, {
+  tsd <- reactive({
     dta_ts <- Error(
       dff() %>%
         drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
@@ -649,15 +682,12 @@ server <- function(input, output, session) {
     return(omit_na_edges(dta_ts))
   })
 
-
-  tsg <- eventReactive(input$go, ignoreNULL = FALSE, {
-    tsg = lapop_ts(tsd(),
+  tsg <- reactive({lapop_ts(tsd(),
                    ymax = ifelse(any(tsd()$prop > 88, na.rm = TRUE), 110, 100),
                    #label_vjust = -1.5,
                    label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
                    source_info = "Source: CSES Data Playground",
                    subtitle = "% in selected category")
-    return(tsg)
   })
 
 
@@ -667,7 +697,7 @@ server <- function(input, output, session) {
 
   # Cross Country
   # # -----------------------------------------------------------------------
-  ccd <- eventReactive(input$go, ignoreNULL = FALSE, {
+  ccd <- reactive({
     dta_cc <- Error(
       dff() %>%
         drop_na(!!sym(outcome()), !!sym(input$weight_type)) %>%
@@ -693,12 +723,10 @@ server <- function(input, output, session) {
     return(dta_cc)
   })
 
-  ccg <- eventReactive(input$go, ignoreNULL = FALSE, {
-    ccg = lapop_cc(ccd(), sort = "hi-lo",
+  ccg <- reactive({lapop_cc(ccd(), sort = "hi-lo",
                    subtitle = "% in selected category",
                    ymax = ifelse(any(ccd()$prop > 90, na.rm = TRUE), 110, 100),
                    source_info = "Source: CSES Data Playground")
-    return(ccg)
   })
 
   output$cc <- renderPlot({
@@ -802,22 +830,57 @@ server <- function(input, output, session) {
   })
 
   # Combine demographic data frames into one df
-  moverd <- eventReactive(input$go, ignoreNULL = FALSE, {
-    dta_mover <- Error(rbind(secdf(), genderdf(), agedf(), wealthdf(), eddf(), urdf()))
+  moverd <- reactive({
+    req(dff(), input$recode, input$weight_type)
+
+    dta_mover <- Error(rbind(
+      if (input$variable_sec != "None" && input$variable_sec != outcome()) {
+        process_data(
+          data = dff(),
+          outcome_var = outcome(),
+          recode_range = input$recode,
+          group_var = input$variable_sec,
+          weight_var = input$weight_type,
+          var_label = str_wrap(variable_sec_lab(), width = 25)
+        )
+      },
+      if ("gendermc" %in% input$demog) {
+        process_data(dff(), outcome(), input$recode, "gendermc", "Gender",
+                     input$weight_type)
+      },
+      if ("age" %in% input$demog) {
+        process_data(dff(), outcome(), input$recode, "age", "Age",
+                     input$weight_type)
+      },
+      if ("wealth" %in% input$demog) {
+        process_data(dff(), outcome(), input$recode, "wealthf", "Wealth",
+                     input$weight_type)
+      },
+      if ("edre" %in% input$demog) {
+        process_data(dff(), outcome(), input$recode, "edrerf", "Education",
+                     input$weight_type)
+      },
+      if ("ur" %in% input$demog) {
+        process_data(dff(), outcome(), input$recode, "ur", "Place of\nResidence",
+                     input$weight_type)
+      }
+    ))
+
     validate(
       need(dta_mover, "Error: no data available. Please verify that this question was asked in this country/year combination")
     )
+
     dta_mover$vallabel <- as.character(dta_mover$vallabel)
     return(dta_mover)
   })
 
-  moverg <- eventReactive(input$go, ignoreNULL = FALSE, {
+
+  moverg <- reactive({
     moverg <- lapop_mover(moverd(),
                           subtitle = "% in selected category",
                           ymax = ifelse(any(moverd()$prop > 90, na.rm = TRUE), 119,
                                         ifelse(any(moverd()$prop > 80, na.rm = TRUE), 109, 100)),
-                          source_info = "Source: CSES Data Playground"
-                          )
+                          source_info = "Source: CSES Data Playground")
     return(moverg)
   })
 
