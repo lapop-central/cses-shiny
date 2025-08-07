@@ -1,18 +1,20 @@
 # # -----------------------------------------------------------------------
-# CSES DATA PLAYGROUND
-# Date: May 35h, 2025
+### CSES DATA PLAYGROUND
+# Date: August 8th, 2025
 # Author: Robert Vidigal, PhD
 # Purpose: CSES Shiny Data Playground based on LAPOP Lab Data Playground
-# Data In: cses_shiny_data.rds
+### Data In:
+# cses_shiny_data.rds
 # cses_variable_labels.csv
 # cses_labs.rda
 # and also fonts from /wwww/
-# Data Out: N/A
+### Data Out: N/A
 # Prev file: ./shiny_preprocessing.R
 # Status: On-going
 # Machine: Windows OS
 # # -----------------------------------------------------------------------
 
+# # -----------------------------------------------------------------------
 # Packages loading
 # # -----------------------------------------------------------------------
 library(lapop)
@@ -81,12 +83,6 @@ weighted.ttest.ci <- function(x, weights) {
 
 # Helper for missing country-year by outcome_var
 # # -----------------------------------------------------------------------
-#get_missing_combinations <- function(data, outcome_var) {
-#  data %>%
-#    group_by(pais_nam, wave = as.character(as_factor(wave))) %>%
-#    summarise(non_na = sum(!is.na(.data[[outcome_var]])), .groups = "drop") %>%
-#    filter(non_na == 0)
-#}
 get_missing_combinations <- function(data, outcome_var, wave_var,
                                      selected_waves, selected_countries) {
   # Convert wave values to string using haven labels
@@ -286,11 +282,11 @@ ui <- fluidPage(
       ),
 
       #actionButton("go", "Generate") # Include button in UI
+
       tags$div(
         style = "display: none;",
         actionButton("go", "Generate")
       )
-
 
     ),
 
@@ -347,8 +343,8 @@ server <- function(input, output, session) {
     }
   })
 
+  # Check the number of selected variables for breakdown
    observeEvent(input$demog, {
-    # Check the number of selected variables
     if (length(input$demog) > 3) {
       # Show a warning message
       showNotification(HTML("You should only select a maximum of 3 demographic variables to plot."), type = "warning")
@@ -371,6 +367,10 @@ server <- function(input, output, session) {
 
   outcome_code <- reactive({
     vars_labels$column_name[which(vars_labels$column_name == paste(outcome()))]
+  })
+
+  outcome_lab <- reactive({
+    vars_labels$question_short_en[which(vars_labels$column_name == paste(outcome()))]
   })
 
   variable_sec <- reactive({
@@ -468,7 +468,7 @@ server <- function(input, output, session) {
     vars_labels$question_short_en[which(vars_labels$column_name == formulaText())]
   })
 
-  output$caption <- eventReactive(input$go, ignoreNULL = FALSE, {
+  output$caption <- renderText({
     cap()
   })
 
@@ -478,7 +478,7 @@ server <- function(input, output, session) {
            vars_labels$question_en[which(vars_labels$column_name == formulaText())])
   })
 
-  output$wording <- eventReactive(input$go, ignoreNULL = FALSE, {
+  output$wording <- renderText({
     word()
   })
 
@@ -487,7 +487,7 @@ server <- function(input, output, session) {
     vars_labels$responses_en_rec[which(vars_labels$column_name == formulaText())]
   })
 
-  output$response <- eventReactive(input$go, ignoreNULL = FALSE, {
+  output$response <- renderText({
     resp()
   })
 
@@ -496,7 +496,7 @@ server <- function(input, output, session) {
     vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
   })
 
-  output$response_sec <- eventReactive(input$go, ignoreNULL = FALSE, {
+  output$response_sec <- renderText({
     resp_sec()
   })
 
@@ -509,7 +509,7 @@ server <- function(input, output, session) {
     }
   })
 
-  output$selected_values <- eventReactive(input$go, ignoreNULL = FALSE, {
+  output$selected_values <- renderText({
     slider_values()
   })
 
@@ -733,8 +733,10 @@ server <- function(input, output, session) {
     return(ccg())
   })
 
-  # Use function for each demographic breakdown variable
+  # Breakdown
   # # -----------------------------------------------------------------------
+  # Use function for each demographic breakdown variable
+
   secdf <- eventReactive(input$go, ignoreNULL = FALSE, {
     if (input$variable_sec == "None") {
       NULL
@@ -909,6 +911,7 @@ server <- function(input, output, session) {
     },
 
     content = function(file) {
+
       if(input$tabs == "Histogram") {
         title_text <- isolate(cap())
         word_text <- isolate(word())
@@ -926,16 +929,6 @@ server <- function(input, output, session) {
       } else if (input$tabs == "Time Series") {
         title_text <- isolate(cap())
         subtitle_text <- slider_values()
-
-        # Check for single time period
-        #if(any(table(tsd()$wave) == 1)) {
-        #  showNotification(
-        #    "Caution: your selection includes only one time period",
-        #    type = "warning",
-        #    duration = 5
-        # )
-          #return()  # Stops further execution
-        #}
 
         ts_to_save <-  lapop_ts(tsd(),
                                 main_title = title_text,

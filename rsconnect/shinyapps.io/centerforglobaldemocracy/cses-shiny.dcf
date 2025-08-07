@@ -5,9 +5,9 @@ account: centerforglobaldemocracy
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14616297
-bundleId: 10725929
+bundleId: 10741542
 url: https://centerforglobaldemocracy.shinyapps.io/cses-shiny/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: app_old_warning.R
+ignoredFiles: .RData|app_old_warning.R|app_w_stack.R|cses_shiny_data.rds|Data preprocessing

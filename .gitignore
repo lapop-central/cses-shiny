@@ -4,3 +4,5 @@
 .Ruserdata
 *.dcf
 rsconnect/shinyapps.io/centerforglobaldemocracy/cses-shiny.dcf
+app_old_warning.R
+app_w_stack.R
