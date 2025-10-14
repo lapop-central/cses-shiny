@@ -488,12 +488,30 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
                                        vars_labels$responses_en_rec,
                                        sep = " ")
 
-# FINAL EXPORT OF LABELS
+
 # # -----------------------------------------------------------------------
+# CONTINUOUS VARIABLES
+# # -----------------------------------------------------------------------
+# IMD3001_TS
+# IMD5054_2
+# IMD5057_1
+# IMD5035
+# IMD5056_2
+# IMD5055_1
+# IMD5053_1
+# IMD5052_2
+# IMD5006_2
+# IMD5006_1
+# IMD5058_1
+# IMD5049
+
 # REMOVING CONTINUOUS VARS FOR NOW...
 labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
-                                   "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
-                                   "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
+                          "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
+                          "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
+
+# FINAL EXPORT OF LABELS
+# # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
 
 # # -----------------------------------------------------------------------
