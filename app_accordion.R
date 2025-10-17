@@ -14,7 +14,7 @@
 # 4. and fonts from /wwww/
 ### Data Out: N/A
 # # -----------------------------------------------------------------------
-options(shiny.useragg = TRUE) # speed it up
+options(shiny.useragg = TRUE)
 # # -----------------------------------------------------------------------
 # Packages loading
 # # -----------------------------------------------------------------------
@@ -50,9 +50,7 @@ waves_total = c("1996", "1997", "1998", "1999", "2000", "2001", "2002",
                 "2010", "2011", "2012", "2013", "2014", "2015", "2016",
                 "2017", "2018", "2019", "2020",  "2021")
 
-
-# # -----------------------------------------------------------------------
-# Helper function for TS (handle missing values at end or middle of series)
+# Helper function for Time-series (handle missing values at end or middle of series)
 # # -----------------------------------------------------------------------
 omit_na_edges <- function(df) {
   # Find which rows have NA values
@@ -68,8 +66,7 @@ omit_na_edges <- function(df) {
   return(df_clean)
 }
 
-# # -----------------------------------------------------------------------
-# Custom weighted averages & CIs, much faster than survey_mean()
+# Custom weighted averages & CIs, to speed up computational speed vs. survey_mean()
 # # -----------------------------------------------------------------------
 weighted.ttest.ci <- function(x, weights) {
   nx <- length(x)
@@ -84,7 +81,6 @@ weighted.ttest.ci <- function(x, weights) {
   return(result)
 }
 
-# # -----------------------------------------------------------------------
 # Helper for missing country-year by outcome_var
 # # -----------------------------------------------------------------------
 get_missing_combinations <- function(data, outcome_var, wave_var,
@@ -150,9 +146,8 @@ process_data <- function(data, outcome_var, recode_range,
   return(processed_data)
 }
 
-# # -----------------------------------------------------------------------
-# BOOTSTRAP THEME
-# # -----------------------------------------------------------------------
+library(bslib)
+
 cses_theme <- bs_theme(
   version = 5,
   bootswatch = "cosmo",
@@ -171,7 +166,7 @@ cses_theme <- bs_theme(
 )
 
 # # -----------------------------------------------------------------------
-# HOVER POP-UP FOR LEFTSIDE MENU
+# HOVER POP-UP
 # # -----------------------------------------------------------------------
 info_badge <- function(text, title, content) {
   bsplus::bs_embed_popover(
@@ -184,8 +179,6 @@ info_badge <- function(text, title, content) {
   )
 }
 
-
-# # -----------------------------------------------------------------------
 # N-SIZE FUNCTION TO PULL COUNTRY-YEAR COMBOS
 # # -----------------------------------------------------------------------
 get_sample_counts <- function(
@@ -238,6 +231,7 @@ get_sample_counts <- function(
   )
 }
 
+
 # # -----------------------------------------------------------------------
 # # -----------------------------------------------------------------------
 # # -----------------------------------------------------------------------
@@ -247,15 +241,20 @@ get_sample_counts <- function(
 # # -----------------------------------------------------------------------
 ui <- fluidPage(
   theme = cses_theme,
+
   tags$h2("CSES Data Playground (beta version)",
           style = "color: #C4722A; font-weight: bold; font-size: 36px;"),
 
   sidebarLayout(
-    # ----- Sidebar panel for inputs
-    sidebarPanel(width = 3,
+
+    # Sidebar panel for inputs ----
+    sidebarPanel(
+      width = 3,
+
       selectInput("variable", "Outcome",
                   labs[order(names(labs))],
                   selected = "IMD3010"),
+
       # Default picks most recent module
       pickerInput(inputId = "module",
                   label = tagList(info_badge("Module",
@@ -266,7 +265,7 @@ ui <- fluidPage(
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
-      # ----- COUNTRY
+      # COUNTRY
       pickerInput(inputId = "pais",
                   label = "Countries",
                     #tagList(info_badge("Countries",
@@ -276,7 +275,7 @@ ui <- fluidPage(
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
-      # ----- WAVE
+      # WAVE
       pickerInput(inputId = "wave",
                   label = "Years",
                   #tagList(info_badge("Years",
@@ -294,25 +293,24 @@ ui <- fluidPage(
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
-      # ----- WEIGHT selection radio buttons
+      # WEIGHT selection radio buttons ----
+      # Further information on weights are available in Part 6 of CSES MODULE 4
       bsplus::use_bs_popover(),
       radioButtons(
         inputId = "weight_type",
         label = tagList(info_badge("Weights",
-                        HTML("Further information on weights is available in <b>Part 6</b> of CSES Module 4."),
-                        "Weights")),
-        # For a link, add:
+                                   HTML("Further information on weights is available in <b>Part 6</b> of CSES Module 4."),
+                                   "Weights")),
+        # If you want a link, add:
         # HTML('Further information on weights is available in <b>Part 6</b> of CSES Module 4. <br><a href=\"#\" target=\"_blank\">Open doc</a>')
         choiceValues = c("no_weight", "weight_demographic", "weight_sample"),
         choiceNames  = list(
-          info_badge("Unweighted", "No weights applied. Raw proportions/percentages.",
-                     "Unweighted"),
-          info_badge("Demographic weight", "Post-stratification targets.",
-                     "Demographic weight"),
-          info_badge("Sample weight", "Design/selection probability weights.",
-                     "Sample weight")
+          info_badge("Unweighted", "No weights applied. Raw proportions/percentages.", "Unweighted"),
+          info_badge("Demographic weight", "Post-stratification targets.", "Demographic weight"),
+          info_badge("Sample weight", "Design/selection probability weights.", "Sample weight")
         ),
-        selected = "no_weight"),
+        selected = "no_weight"
+      ),
 
       # This fixes a formatting issue with checkboxGroupInput() below
       tags$head(
@@ -335,7 +333,11 @@ ui <- fluidPage(
       right: 330px !important; /* shift away from right edge */
       box-sizing: border-box;
       font-size: 14px;
-    }"))),
+    }
+        "
+          )
+        )
+      ),
 
       # This triggers the "Generate" button
       tags$script(HTML("
@@ -449,8 +451,8 @@ ui <- fluidPage(
         'input.tabs == "Breakdown"',
         selectInput("variable_sec",
                     label = tagList(
-          info_badge("Subgroup for analysis",
-                    HTML("Optionally split the Breakdown plot by another subgroup from the dataset.
+          info_badge("Secondary Variable",
+                    HTML("Optionally split the Breakdown plot by a second variable from the dataset.
                  Select <b>None</b> to disable."), "Secondary Variable")),
                     c("None" = "None",
                       labs_sec[order(names(labs_sec))])),
@@ -461,44 +463,55 @@ ui <- fluidPage(
                              "Education" = "edre",
                              "Urban/Rural" = "ur"),
                            selected = c("gendermc", "age", "edre"),
-                           inline = TRUE)),
-      # Include button in UI (disabled)
-      #actionButton("go", "Generate")
+                           inline = TRUE)
+      ),
+
+      #actionButton("go", "Generate") # Include button in UI
+
       tags$div(
         style = "display: none;",
-        actionButton("go", "Generate"))),
+        actionButton("go", "Generate")
+      )
+
+    ),
 
     # Main panel for displaying outputs ----
     # # -----------------------------------------------------------------------
     mainPanel(
+
       # Output: Formatted text for caption ----
       h3(textOutput("caption")),
       h5(textOutput("wording")),
       h5(textOutput("response")),
+
       tabsetPanel(id = "tabs",
                   tabPanel("Histogram", plotOutput("hist")),
+
                   tabPanel("Time Series", plotOutput("ts")),
+
                   tabPanel("Cross Country", plotOutput("cc")),
-                  tabPanel("Breakdown", plotOutput("mover"))),
+
+                  tabPanel("Breakdown", plotOutput("mover"))
+      ),
       br(),
-      fluidRow(column(12,
-                      tags$div(style = "margin-top:-15px"),
-                      downloadButton(outputId = "downloadPlot", label = "Download Figure"),
-                      downloadButton(outputId = "downloadTable", label = "Download Table"),
-                      tags$div(style = "height:10px"),
+      fluidRow(column(12, "",
                       uiOutput("ns_card"),
                       #uiOutput("missing_warning_card"),
-        )
-      )
+                      downloadButton(outputId = "downloadPlot", label = "Download Figure"),
+                      downloadButton(outputId = "downloadTable", label = "Download Table")))
     )
   )
 )
 
+
+
 # # -----------------------------------------------------------------------
-# Define SERVER logic
+# Define server logic to plot various variables ----
 # # -----------------------------------------------------------------------
+
 # The server function will be called when each client (browser) loads the app.
 server <- function(input, output, session) {
+
   observe({
     req(input$variable)
     if (!input$variable %in% names(dstrata)) {
@@ -526,8 +539,8 @@ server <- function(input, output, session) {
     }
   })
 
-  # MAKE IT REACTIVE
-  # # -----------------------------------------------------------------------
+# # -----------------------------------------------------------------------
+
   formulaText <- reactive({
     paste(input$variable)
   })
@@ -566,8 +579,7 @@ server <- function(input, output, session) {
       dplyr::filter(IMD1008_MOD %in% input$module)
   })
 
-# OLD CODE THAT WOULD FORCE PRESELECTION, BUT IT BREAKS THE APP WITH FULL DATASET
-# Observe changes in module input to update wave and pais
+  # Observe changes in module input to update wave and pais
 #  observeEvent(filtered_data(), {
 #    data <- filtered_data()
 #
@@ -734,64 +746,81 @@ server <- function(input, output, session) {
   # # -----------------------------------------------------------------------
   # WARNING CARD FOR MISSING COMBOS
   # # -----------------------------------------------------------------------
-# output$missing_warning_card <- renderUI({
-#   req(input$go > 0, input$wave, input$pais)
+  output$missing_warning_card <- renderUI({
+    req(input$go > 0, input$wave, input$pais)
 
-#   # Normalize wave and country inputs
-#   selected_waves <- as.character(input$wave)
-#   selected_countries <- as.character(input$pais)
+    # Normalize wave and country inputs
+    selected_waves <- as.character(input$wave)
+    selected_countries <- as.character(input$pais)
 
-#   # Step 1: Compute missing combinations
-#   missing <- get_missing_combinations(
-#     data = dff(),
-#     outcome_var = outcome(),
-#     wave_var = "wave",
-#     selected_waves = selected_waves,
-#     selected_countries = selected_countries
-#   )
+    # Step 1: Compute missing combinations
+    missing <- get_missing_combinations(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      selected_waves = selected_waves,
+      selected_countries = selected_countries
+    )
 
-#   # Step 2: Skip if none missing
-#   if (nrow(missing) == 0) return(NULL)
+    # Step 2: Skip if none missing
+    if (nrow(missing) == 0) return(NULL)
 
-#   # Add country abbreviations
-#   missing <- missing %>%
-#     left_join(dstrata %>% distinct(pais_nam, pais_lab), by = "pais_nam")
+    # Add country abbreviations
+    missing <- missing %>%
+      left_join(dstrata %>% distinct(pais_nam, pais_lab), by = "pais_nam")
 
-#   # Format message: YEAR: COUNTRIES
-#   warning_text <- missing %>%
-#     group_by(wave) %>%
-#     summarise(
-#       country_list = paste(sort(unique(pais_lab)), collapse = ", "),
-#       .groups = "drop"
-#     ) %>%
-#     mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
-#     pull(combo_label) %>%
-#     paste(collapse = "<br>")
+    # Format message: YEAR: COUNTRIES
+    warning_text <- missing %>%
+      group_by(wave) %>%
+      summarise(
+        country_list = paste(sort(unique(pais_lab)), collapse = ", "),
+        .groups = "drop"
+      ) %>%
+      mutate(combo_label = paste0("<b>", wave, "</b>: ", country_list)) %>%
+      pull(combo_label) %>%
+      paste(collapse = "<br>")
 
-#   # Display warning card
-#   tags$div(
-#     style = "
-#     border: 2px solid #ffc107;
-#     border-radius: 8px;
-#     padding: 15px;
-#     background-color: #fff8e1;
-#     margin-bottom: 20px;
-#     max-height: 120px;
-#     overflow-y: auto;
-#     ",
-#     HTML(paste0(
-#       "<span style='font-size:16px; color: #856404;'>⚠️ <b>Warning:</b> The following country-years have no data for <b>",
-#       outcome(), "</b>:<br>", warning_text
-#     ))
-#   )
-# })
+    # Ns used (non-missing outcome)
+    ns <- get_sample_counts(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      selected_waves = selected_waves,
+      selected_countries = selected_countries
+    )
 
+    ns_total <- format(ns$overall, big.mark = ",")
+    ns_by_wave <- ns$per_wave |>
+      dplyr::arrange(wave) |>
+      dplyr::mutate(line = paste0("<b>", wave, "</b>: N=", format(n, big.mark=","))) |>
+      dplyr::pull(line) |>
+      paste(collapse = "<br>")
+
+    # Display warning card
+    tags$div(
+      style = "
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      background-color: #fff8e1;
+      margin-bottom: 20px;
+      max-height: 120px;
+      overflow-y: auto;
+      ",
+      HTML(paste0(
+        "<span style='font-size:16px; color: #856404;'>⚠️ <b>Warning:</b> The following country-years have no data for <b>",
+        outcome(), "</b>:<br>", warning_text
+      ))
+    )
+  })
+
+  # # -----------------------------------------------------------------------
   # N-SIZE CARD
   # # -----------------------------------------------------------------------
   output$ns_card <- renderUI({
     req(dff(), outcome(), input$wave, input$pais)
 
-    selected_waves <- as.character(input$wave)
+    selected_waves     <- as.character(input$wave)
     selected_countries <- as.character(input$pais)
 
     ns <- get_sample_counts(
@@ -804,78 +833,110 @@ server <- function(input, output, session) {
     )
 
     # If absolutely no non-missing data, show a gentle note
-    if (is.null(ns$overall) || ns$overall == 0) {
+    if (is.null(ns$overall) || is.na(ns$overall) || ns$overall == 0) {
       return(tags$div(
         style = "border:2px solid #17a2b8; border-radius:8px; padding:14px; background:#e9f7ff; margin-bottom:20px;",
         HTML(paste0("ℹ️ <b>Ns</b> for <b>", outcome(), "</b>: No non-missing observations in the current selection."))
       ))
     }
 
-    # Expect columns: ns$per_wave (wave, n) and ns$per_country_wave (pais, wave, n)
+    # Expect: ns$per_wave (wave, n), ns$per_country_wave (pais/pais_nam, wave, n)
     pCW <- ns$per_country_wave
-    # If your helper names the country column differently, change "pais" below
+    if (is.null(pCW)) {
+      pCW <- data.frame(wave = character(), n = integer(), stringsAsFactors = FALSE)
+    }
+    per_wave_tbl <- ns$per_wave
+    if (is.null(per_wave_tbl)) {
+      per_wave_tbl <- data.frame(wave = character(), n = integer(), stringsAsFactors = FALSE)
+    }
 
-    # Control whether to show zeros
+    # Normalize types
+    pCW <- dplyr::mutate(pCW, wave_chr = as.character(.data$wave))
+    per_wave_tbl <- dplyr::mutate(per_wave_tbl, wave_chr = as.character(.data$wave))
+
+    # Detect country column robustly (handles pais vs pais_nam vs country)
+    country_col <- intersect(names(pCW), c("pais", "pais_nam", "country", "pais_lab"))
+    if (length(country_col) == 0) {
+      # fall back to "anything that's not wave/wave_chr/n"
+      cand <- setdiff(names(pCW), c("wave", "wave_chr", "n"))
+      country_col <- if (length(cand)) cand[1] else "pais"
+      if (!country_col %in% names(pCW)) pCW[[country_col]] <- character(nrow(pCW))
+    } else {
+      country_col <- country_col[1]
+    }
+
+    # Control whether to show zero-N rows in the list
     show_zeros <- FALSE
 
-    # Order waves nicely
-    waves <- unique(pCW$wave)
-
-    # If waves are numeric-like but char, coerce to numeric for sorting (silently)
+    # Build wave order from pCW, fallback to per_wave
+    waves <- unique(pCW$wave_chr)
+    if (!length(waves)) waves <- unique(per_wave_tbl$wave_chr)
     suppressWarnings({
-      wave_num <- suppressWarnings(as.numeric(as.character(waves)))
-      if (all(!is.na(wave_num))) waves <- waves[order(wave_num)] else waves <- sort(waves)
+      wnum <- as.numeric(waves)
+      if (length(waves) && all(!is.na(wnum))) {
+        waves <- waves[order(wnum)]
+      } else {
+        waves <- sort(waves)
+      }
     })
 
-    # Create a quick lookup for total N per wave
-    per_wave_tbl <- ns$per_wave |>
-      dplyr::mutate(wave_chr = as.character(wave)) |>
-      dplyr::select(wave_chr, n)
-
-    # Build one <details> block per wave
-    blocks <- lapply(seq_along(waves), function(i) {
-      w <- waves[i]
-      w_chr <- as.character(w)
+    # Build accordion panels (replaces your old 'blocks' code)
+    panels <- lapply(seq_along(waves), function(i) {
+      w_chr <- waves[i]
 
       wt <- per_wave_tbl$n[match(w_chr, per_wave_tbl$wave_chr)]
       wt <- ifelse(is.na(wt), 0, wt)
 
-      rows <- pCW |>
-        dplyr::filter(as.character(wave) == w_chr)
+      rows <- dplyr::filter(pCW, .data$wave_chr == w_chr)
+      if (!show_zeros && nrow(rows)) rows <- dplyr::filter(rows, .data$n > 0)
+      if (nrow(rows)) rows <- dplyr::arrange(rows, dplyr::desc(.data$n))
 
-      if (!show_zeros) rows <- dplyr::filter(rows, n > 0)
+      items <- if (nrow(rows)) {
+        lapply(seq_len(nrow(rows)), function(j) {
+          n_j <- format(rows$n[j], big.mark = ",")
+          tags$li(HTML(paste0("<b>", rows[[country_col]][j], "</b>: N=", n_j)))
+        })
+      } else {
+        list(tags$li(tags$em("No data")))
+      }
 
-      rows <- dplyr::arrange(rows, dplyr::desc(n), .by_group = FALSE)
-
-      items <- lapply(seq_len(nrow(rows)), function(j) {
-        n_j <- format(rows$n[j], big.mark = ",")
-        is_zero <- isTRUE(rows$n[j] == 0)
-        li_style <- if (is_zero) "color:#6c757d;" else NULL
-        # country column is "pais" as returned by the helper
-        tags$li(
-          tags$span(HTML(paste0("<b>", rows$pais[j], "</b>: N=", n_j))),
-          style = li_style
-        )
-      })
-
-      tags$details(
-        open = (i == 1),  # first year open by default
-        class = "ns-year",
-        tags$summary(
-          HTML(paste0("<b>", w_chr, "</b> — Total N=", format(wt, big.mark=",")))
-        ),
+      bslib::accordion_panel(
+        title = HTML(paste0("<b>", w_chr, "</b> — Total N=", format(wt, big.mark=","))),
+        value = w_chr,
         tags$ul(items)
       )
     })
 
+    # If there are no waves at all, show a minimal card and exit
+    if (!length(waves)) {
+      return(tags$div(
+        style = "border:2px solid #17a2b8;border-radius:8px;padding:14px;background:#e9f7ff;margin-bottom:20px;",
+        tags$div(
+          HTML(paste0(
+            "📊 <b>Sample sizes</b> (non-missing <b>", outcome(), "</b>)<br>",
+            "<b>Total across selection:</b> ", format(ns$overall, big.mark = ",")
+          )),
+          style = "margin-bottom:6px;"
+        ),
+        tags$hr(style="margin:8px 0;"),
+        tags$em("No per-wave detail to display.")
+      ))
+    }
+
+    acc <- do.call(
+      bslib::accordion,
+      c(list(id = "ns_acc", multiple = FALSE, open = NULL), panels)
+    )
+
+    # Return the card with the accordion inside
     tags$div(
       style = "border:2px solid #17a2b8;
-      border-radius:8px;
-      padding:14px;
-      background:#e9f7ff;
-      margin-bottom:20px;
-      max-height:180px;
-      overflow-y:auto;",
+             border-radius:8px;
+             padding:14px;
+             background:#e9f7ff;
+             margin-bottom:20px;
+             max-height:120px;
+             overflow-y:auto;",
       # Title + grand total
       tags$div(
         HTML(paste0(
@@ -885,18 +946,11 @@ server <- function(input, output, session) {
         style = "margin-bottom:6px;"
       ),
       tags$hr(style="margin:8px 0;"),
-      # Small CSS polish for the dropdowns
-      tags$style(HTML("
-      details.ns-year { margin-bottom: 8px; }
-      details > summary { cursor: pointer; list-style: none; }
-      details > summary::-webkit-details-marker { display: none; }
-    ")),
-      blocks
+      acc
     )
   })
 
-# # -----------------------------------------------------------------------
-# SOURCE INFO WITH PAIS and WAVE FOR EXPORT
+# SOURCE INFO WITH PAIS and WAVE
 # # -----------------------------------------------------------------------
   source_info_both <- reactive({
     # Get country abbreviations that match selected country names
@@ -944,10 +998,6 @@ server <- function(input, output, session) {
            str_wrap(paste0(word(), " ", resp()), 130)
     )
   })
-
-  # # -----------------------------------------------------------------------
-  # # -----------------------------------------------------------------------
-  # # -----------------------------------------------------------------------
 
   # Histogram
   # # -----------------------------------------------------------------------
