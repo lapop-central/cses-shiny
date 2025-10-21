@@ -15,6 +15,7 @@
 ### Data Out: N/A
 # # -----------------------------------------------------------------------
 options(shiny.useragg = TRUE) # speed it up
+
 # # -----------------------------------------------------------------------
 # Packages loading
 # # -----------------------------------------------------------------------
@@ -495,6 +496,10 @@ ui <- fluidPage(
 )
 
 # # -----------------------------------------------------------------------
+# # -----------------------------------------------------------------------
+# # -----------------------------------------------------------------------
+
+# # -----------------------------------------------------------------------
 # Define SERVER logic
 # # -----------------------------------------------------------------------
 # The server function will be called when each client (browser) loads the app.
@@ -589,151 +594,142 @@ server <- function(input, output, session) {
 #    )
 #  })
 
-  all_waves  <- sort(unique(dstrata$wave))
-  all_paises <- sort(unique(dstrata$pais))
+all_waves  <- sort(unique(dstrata$wave))
+all_paises <- sort(unique(dstrata$pais))
 
-  observeEvent(input$module, {
-    req(input$module)
-
-    valid <- dplyr::filter(dstrata, IMD1008_MOD %in% input$module)
-    valid_waves  <- sort(unique(valid$wave))
-    valid_paises <- sort(unique(valid$pais))
-
-    wave_disabled <- !(all_waves  %in% valid_waves)
-    pais_disabled <- !(all_paises %in% valid_paises)
-
-    new_wave_sel <- intersect(isolate(input$wave), valid_waves)
-    if (length(new_wave_sel) == 0) new_wave_sel <- valid_waves
-
-    new_pais_sel <- intersect(isolate(input$pais), valid_paises)
-    if (length(new_pais_sel) == 0) new_pais_sel <- valid_paises
-
-    shinyWidgets::updatePickerInput(
-      session, "wave",
-      choices = all_waves,
-      selected = new_wave_sel,
-      choicesOpt = list(
-        disabled = wave_disabled,
-        style    = ifelse(wave_disabled, "color:#999;", "")
-      )
+observeEvent(input$module, {
+  req(input$module)
+  valid <- dplyr::filter(dstrata, IMD1008_MOD %in% input$module)
+  valid_waves  <- sort(unique(valid$wave))
+  valid_paises <- sort(unique(valid$pais))
+  wave_disabled <- !(all_waves  %in% valid_waves)
+  pais_disabled <- !(all_paises %in% valid_paises)
+  new_wave_sel <- intersect(isolate(input$wave), valid_waves)
+  if (length(new_wave_sel) == 0) new_wave_sel <- valid_waves
+  new_pais_sel <- intersect(isolate(input$pais), valid_paises)
+  if (length(new_pais_sel) == 0) new_pais_sel <- valid_paises
+  shinyWidgets::updatePickerInput(
+    session, "wave",
+    choices = all_waves,
+    selected = new_wave_sel,
+    choicesOpt = list(
+      disabled = wave_disabled,
+      style    = ifelse(wave_disabled, "color:#999;", "")
     )
-
-    shinyWidgets::updatePickerInput(
-      session, "pais",
-      choices = all_paises,
-      selected = new_pais_sel,
-      choicesOpt = list(
-        disabled = pais_disabled,
-        style    = ifelse(pais_disabled, "color:#999;", "")
-      )
+  )
+  shinyWidgets::updatePickerInput(
+    session, "pais",
+    choices = all_paises,
+    selected = new_pais_sel,
+    choicesOpt = list(
+      disabled = pais_disabled,
+      style    = ifelse(pais_disabled, "color:#999;", "")
     )
-  })
+  )
+})
 
-  # Set default slider values:
-  # # -----------------------------------------------------------------------
-  # 2-point: 1-1
-  # 3-point: 3-3
-  # 4-point: 1-2
-  # 5-point: 4-5
-  # 6-point: 3-3
-  # 7-point: 5-7
-  # 10-point: 8-10
-  # ALL OTHER: MEAN
+# Set default slider values:
+# # -----------------------------------------------------------------------
+# 2-point: 1-1
+# 3-point: 3-3
+# 4-point: 1-2
+# 5-point: 4-5
+# 6-point: 3-3
+# 7-point: 5-7
+# 10-point: 8-10
+# ALL OTHER: MEAN
 
-  observeEvent(input$variable, {
-    if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 1) {
-      sliderParams$valuex <- c(1, 1)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 2) {
-      sliderParams$valuex <- c(1, 1)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 3) {
-      sliderParams$valuex <- c(3, 3)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 4) {
-      sliderParams$valuex <- c(1, 2)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 5) {
-      sliderParams$valuex <- c(4, 5)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 6) {
-      sliderParams$valuex <- c(3, 3)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 7) {
-      sliderParams$valuex <- c(5, 7)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 10) {
-      sliderParams$valuex <- c(8, 10)
-    } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) > 10) {
-      mean_val <- mean(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE)
-      sliderParams$valuex <- c(mean_val, mean_val)
-    }
-  })
+observeEvent(input$variable, {
+  if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 1) {
+    sliderParams$valuex <- c(1, 1)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 2) {
+    sliderParams$valuex <- c(1, 1)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 3) {
+    sliderParams$valuex <- c(3, 3)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 4) {
+    sliderParams$valuex <- c(1, 2)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 5) {
+    sliderParams$valuex <- c(4, 5)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 6) {
+    sliderParams$valuex <- c(3, 3)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 7) {
+    sliderParams$valuex <- c(5, 7)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) == 10) {
+    sliderParams$valuex <- c(8, 10)
+  } else if (max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE) > 10) {
+    mean_val <- mean(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE)
+    sliderParams$valuex <- c(mean_val, mean_val)
+  }
+})
 
-  output$sliderUI <- renderUI({
-    sliderInput(inputId = "recode",
-                label = tagList(info_badge("Which values do you want to graph?",
-                        HTML("Please select which outcome values to be displayed."),
-                        "Which values do you want to graph?")),
-                min = min(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
-                max = max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
-                value = sliderParams$valuex,
-                step = 1)
-  })
+# RECODE SLIDER
+# # -----------------------------------------------------------------------
+output$sliderUI <- renderUI({
+  sliderInput(inputId = "recode",
+              label = tagList(info_badge("Which values do you want to graph?",
+                      HTML("Please select which outcome values to be displayed."),
+                      "Which values do you want to graph?")),
+              min = min(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
+              max = max(as.numeric(dstrata[[formulaText()]]), na.rm=TRUE),
+              value = sliderParams$valuex,
+              step = 1)
+})
 
-  # Filtering data based on user's selection (dff)
-  dff <- eventReactive(input$go, ignoreNULL = FALSE, {
-    dstrata %>%
-      dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
-      dplyr::filter(pais_nam %in% input$pais) # country
-  })
+# Filtering data based on user's selection (dff)
+dff <- eventReactive(input$go, ignoreNULL = FALSE, {
+  dstrata %>%
+    dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
+    dplyr::filter(pais_nam %in% input$pais) # country
+})
 
-  # Rendering var caption based on user's var selection
-  cap <- renderText({
-    vars_labels$question_short_en[which(vars_labels$column_name == formulaText())]
-  })
+# Rendering var caption based on user's var selection
+cap <- renderText({
+  vars_labels$question_short_en[which(vars_labels$column_name == formulaText())]
+})
+output$caption <- renderText({
+  cap()
+})
 
-  output$caption <- renderText({
-    cap()
-  })
+# Rendering variable code + wording based on user's var selection
+word <- renderText({
+  paste0(toupper(vars_labels$column_name[which(vars_labels$column_name == formulaText())]), ". ",
+         vars_labels$question_en[which(vars_labels$column_name == formulaText())])
+})
+output$wording <- renderText({
+  word()
+})
 
-  # Rendering variable code + wording based on user's var selection
-  word <- renderText({
-    paste0(toupper(vars_labels$column_name[which(vars_labels$column_name == formulaText())]), ". ",
-           vars_labels$question_en[which(vars_labels$column_name == formulaText())])
-  })
+# Rendering ROs based on user's var selection
+resp <- renderText({
+  vars_labels$responses_en_rec[which(vars_labels$column_name == formulaText())]
+})
+output$response <- renderText({
+  resp()
+})
 
-  output$wording <- renderText({
-    word()
-  })
+# Rendering variable_sec ROs
+resp_sec <- renderText({
+  vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
+})
+output$response_sec <- renderText({
+  resp_sec()
+})
 
-  # Rendering ROs based on user's var selection
-  resp <- renderText({
-    vars_labels$responses_en_rec[which(vars_labels$column_name == formulaText())]
-  })
+# Rendering User selected recode value(s)
+slider_values <- renderText({
+  if(input$recode[1] == input$recode[2]) {
+    paste0("(value: ", unique(input$recode), ")")
+  } else {
+    paste0("(range: ", paste(input$recode, collapse = " to "), ")")
+  }
+})
+output$selected_values <- renderText({
+  slider_values()
+})
 
-  output$response <- renderText({
-    resp()
-  })
-
-  # Rendering variable_sec ROs
-  resp_sec <- renderText({
-    vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
-  })
-
-  output$response_sec <- renderText({
-    resp_sec()
-  })
-
-  # Rendering User selected recode value(s)
-  slider_values <- renderText({
-    if(input$recode[1] == input$recode[2]) {
-      paste0("(value: ", unique(input$recode), ")")
-    } else {
-      paste0("(range: ", paste(input$recode, collapse = " to "), ")")
-    }
-  })
-
-  output$selected_values <- renderText({
-    slider_values()
-  })
-
-  # # -----------------------------------------------------------------------
-  # WARNING CARD FOR MISSING COMBOS
-  # # -----------------------------------------------------------------------
+# # -----------------------------------------------------------------------
+# WARNING CARD FOR MISSING COMBOS (SWAPPED FOR N-SIZE CARD)
+# # -----------------------------------------------------------------------
 # output$missing_warning_card <- renderUI({
 #   req(input$go > 0, input$wave, input$pais)
 
@@ -786,15 +782,16 @@ server <- function(input, output, session) {
 #   )
 # })
 
-  # N-SIZE CARD
-  # # -----------------------------------------------------------------------
-  output$ns_card <- renderUI({
+# # -----------------------------------------------------------------------
+# N-SIZE CARD
+# # -----------------------------------------------------------------------
+output$ns_card <- renderUI({
     req(dff(), outcome(), input$wave, input$pais)
 
-    selected_waves <- as.character(input$wave)
-    selected_countries <- as.character(input$pais)
+selected_waves <- as.character(input$wave)
+selected_countries <- as.character(input$pais)
 
-    ns <- get_sample_counts(
+ns <- get_sample_counts(
       data = dff(),
       outcome_var = outcome(),
       wave_var = "wave",
@@ -945,13 +942,13 @@ server <- function(input, output, session) {
     )
   })
 
-  # # -----------------------------------------------------------------------
-  # # -----------------------------------------------------------------------
-  # # -----------------------------------------------------------------------
+# # -----------------------------------------------------------------------
+# PLOTS
+# # -----------------------------------------------------------------------
 
-  # Histogram
-  # # -----------------------------------------------------------------------
-  # must break into data event, graph event, and renderPlot to get download buttons to work
+# Histogram
+# # -----------------------------------------------------------------------
+# must break into data event, graph event, and renderPlot to get download to work
   histd <- reactive({
     req(dff(), input$variable, input$weight_type)
 
@@ -984,8 +981,8 @@ server <- function(input, output, session) {
     return(histg())
   })
 
-  # Time-series
-  # # -----------------------------------------------------------------------
+# Time-series
+# # -----------------------------------------------------------------------
   tsd <- reactive({
     dta_ts <- Error(
       dff() %>%
@@ -1029,8 +1026,8 @@ server <- function(input, output, session) {
     return(tsg())
   })
 
-  # Cross Country
-  # # -----------------------------------------------------------------------
+# Cross Country
+# # -----------------------------------------------------------------------
   ccd <- reactive({
     dta_cc <- Error(
       dff() %>%
@@ -1067,9 +1064,9 @@ server <- function(input, output, session) {
     return(ccg())
   })
 
-  # Breakdown
-  # # -----------------------------------------------------------------------
-  # Use function for each demographic breakdown variable
+# Breakdown
+# # -----------------------------------------------------------------------
+# Use function for each demographic breakdown variable
 
   secdf <- eventReactive(input$go, ignoreNULL = FALSE, {
     if (input$variable_sec == "None") {

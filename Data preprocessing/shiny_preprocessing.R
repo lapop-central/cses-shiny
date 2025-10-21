@@ -28,13 +28,14 @@ pais_lab<-data.frame(pais_nam = cses_imd$IMD1006_NAM,
                      pais_lab = cses_imd$IMD1006_UNALPHA2,
                      pais_num = cses_imd$IMD1006_UN)
 
+# Keep unique pais_lab
 pais_lab<-unique(pais_lab)
 write.csv(pais_lab, "./Data preprocessing/pais_lab.csv", row.names=F)
 
-# YEARS VARIABLE
+# --- YEARS VARIABLE
 table(cses_imd$IMD1008_YEAR); cses_imd$wave <- cses_imd$IMD1008_YEAR
 
-# Modules DUMMY VARS
+# --- Modules DUMMY VARS
 cses_imd$IMD1008_MOD<-NA
 cses_imd$IMD1008_MOD[cses_imd$IMD1008_MOD_1 == 1] <- 1
 cses_imd$IMD1008_MOD[cses_imd$IMD1008_MOD_2 == 1] <- 2
@@ -42,7 +43,7 @@ cses_imd$IMD1008_MOD[cses_imd$IMD1008_MOD_3 == 1] <- 3
 cses_imd$IMD1008_MOD[cses_imd$IMD1008_MOD_4 == 1] <- 4
 cses_imd$IMD1008_MOD[cses_imd$IMD1008_MOD_5 == 1] <- 5
 
-# Convert to factor (optional)
+# Convert to factor
 cses_imd$IMD1008_MOD <- factor(cses_imd$IMD1008_MOD, levels = 1:5,
                         labels = c("MODULE 1", "MODULE 2", "MODULE 3",
                                    "MODULE 4", "MODULE 5"))
@@ -95,12 +96,13 @@ cses_imd$age <- factor(cses_imd$age,
                                   "55-64", "65-Oldest"))
 
 # --- HOUSEHOLD INCOME (7 8 9 = NR/DK/MI)
+table(cses_imd$IMD2006)
+
 # 1. LOWEST HOUSEHOLD INCOME QUINTILE
 # 2. SECOND HOUSEHOLD INCOME QUINTILE
 # 3. THIRD HOUSEHOLD INCOME QUINTILE
 # 4. FOURTH HOUSEHOLD INCOME QUINTILE
 # 5. HIGHEST HOUSEHOLD INCOME QUINTILE
-table(cses_imd$IMD2006)
 
 cses_imd$wealth <- cses_imd$IMD2006
 cses_imd$wealth[cses_imd$wealth > 5] <- NA
@@ -110,11 +112,11 @@ cses_imd$wealthf <- factor(cses_imd$wealth,
                      labels = c("Low", "2", "3", "4", "High"))
 
 # --- URBAN-RURAL (7 8 9 = NR/DK/MI)
+table(cses_imd$IMD2007)
 # 1. RURAL AREA OR VILLAGE
 # 2. SMALL OR MIDDLE-SIZED TOWN
 # 3. SUBURBS OF LARGE TOWN OR CITY
 # 4. LARGE TOWN OR CITY
-table(cses_imd$IMD2007)
 
 cses_imd$ur <- cses_imd$IMD2007
 cses_imd$ur <- ifelse(cses_imd$ur == 3 | cses_imd$ur == 4, 1,
@@ -123,7 +125,7 @@ cses_imd$ur <- ifelse(cses_imd$ur == 3 | cses_imd$ur == 4, 1,
 cses_imd$ur <- factor(cses_imd$ur, levels=c(1,2), labels = c("Urban", "Rural"))
 table(cses_imd$ur)
 
-# IDEOLOGY (0 LEFT 10 = RIGHT)
+# --- IDEOLOGY (0 LEFT 10 = RIGHT)
 # 96. OTHER: NOT SPECIFIED (CODEBOOK STATES AS 96 CODE BUT DATA SHOWS 95 CODE)
 # 97. NR 98. DK 99. MI
 table(cses_imd$IMD3006)
@@ -136,7 +138,7 @@ cses_imd$l1 = factor(cses_imd$l1, levels = c(0:10),
                                 "Right/conservative"))
 table(cses_imd$l1)
 
-# RACE
+# --- RACE
 # 01. WHITE
 # 02. ASIAN (INCLUDING SOUTH ASIAN INDIAN, CHINESE, ETC.)
 # 03. BLACK
@@ -144,7 +146,7 @@ table(cses_imd$l1)
 # 05. INDIGENOUS / FIRST PEOPLES
 # table(cses_imd$IMD2010)
 
-# EMPLOYMENT/LABOR
+# --- EMPLOYMENT/LABOR
 cses_imd$labor_force <- case_when(
   cses_imd$IMD2014 %in% c(0, 1, 2, 3, 4, 5) ~ 1,
   cses_imd$IMD2014 %in% c(6, 7, 8, 9, 10) ~ 2,
@@ -157,8 +159,7 @@ cses_imd$labor_force <- factor(cses_imd$labor_force, levels = c(1,2,3),
                                labels = c("In Labor Force",
                                           "Not in Labor Force",
                                           "Other"))
-
-# COMPULSORY VOTE
+# --- COMPULSORY VOTE
 cses_imd$compulsory_vote <- case_when(
   cses_imd$IMD5007 %in% c(1, 2, 3) ~ 1,
   cses_imd$IMD5007 %in% c(5) ~ 0,
@@ -172,6 +173,7 @@ cses_imd$compulsory_vote <- case_when(
 #cses_imd$IMD5007[cses_imd$IMD5007==5]<-0; # 4-point
 #cses_imd$IMD5052_2<-round(cses_imd$IMD5052_2, 1)
 
+# # -----------------------------------------------------------------------
 # WEIGHTS
 # # -----------------------------------------------------------------------
 cses_imd$no_weight <- 1 # UNWEIGHTED (RAW DATA)
@@ -186,6 +188,7 @@ cses_imd$weight_demographic <- cses_imd$IMD1010_2 # PREFERRED WEIGHT (DEFAULT)
 #table(cses_imd$IMD1010_3) # POLITICAL (VOTING)- NOT USING IT
 #cses_imd$weight_political <- cses_imd$IMD1010_3
 
+# # -----------------------------------------------------------------------
 # SELECTING VARIABLES FOR DATA PLAYGROUND
 # # -----------------------------------------------------------------------
 vars <- c(
@@ -206,7 +209,7 @@ vars <- c(
   "IMD1008_MOD"
 )
 
-# Variable Labels
+# --- Variable Labels
 vars_labels <- read.csv("./Data preprocessing/cses_variable_labels_raw.csv",
                         encoding = "latin1")
 
@@ -223,26 +226,26 @@ vars3 %in% names(cses_imd)
 cses_out <- cses_imd[vars3]
 
 # CHECKING INDIVIDUAL VARIABLES
-#table(cses_out$IMD2005_1) # remove 789; 6-point
-#table(cses_out$IMD2005_2) # remove 789; 4-point
+#table(cses_out$IMD2005_1) # remove 7 8 9; 6-point
+#table(cses_out$IMD2005_2) # remove 7 8 9; 4-point
 #table(cses_out$IMD2016) # remove 7:9 values; 5-point
 #table(cses_out$IMD2019_1) # remove 7:9 values; 2-point
 #table(cses_out$IMD3001_PR_1) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
 #table(cses_out$IMD3001_PR_2) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
 #table(cses_out$IMD3001_LH) # remove  9999993 9999995 9999996 9999997 9999998 9999999; 2-point
-#table(cses_out$IMD3001_UH) # remove       9999993 9999995 9999996 9999997 9999998 9999999; 2-point
+#table(cses_out$IMD3001_UH) # remove 9999993 9999995 9999996 9999997 9999998 9999999; 2-point
 #table(cses_out$IMD3001_TS) # remove 9; 6-point
 #table(cses_out$IMD3002_OUTGOV) # remove  9999996 9999997 9999998 9999999; 2-point
 #table(cses_out$IMD3002_VS_1) # remove 9; 2-point
 #table(cses_out$IMD3002_LR_CSES) # remove  9; 3-point
-#table(cses_out$IMD3005_1) # remove  7      8      9; 2-point
-#table(cses_out$IMD3010) # remove 789, 6 should be recoded to 3; 5-point
-#table(cses_out$IMD3011) # remove 789; 5-point
+#table(cses_out$IMD3005_1) # remove  7 8 9; 2-point
+#table(cses_out$IMD3010) # remove 7 8 9, 6 should be recoded to 3; 5-point
+#table(cses_out$IMD3011) # remove 7 8 9; 5-point
 #table(cses_out$IMD3012) # remove 7 8 9; 5-point
-#table(cses_out$IMD3013_1) # remove 789; 3-point with 1,3,5
+#table(cses_out$IMD3013_1) # remove 7 8 9; 3-point with 1,3,5
 #table(cses_out$IMD3013_2) # remove 7 8 9; 2-point with 1,2
-#table(cses_out$IMD3013_3) # remove 789; 2-point with 4 and 5
-#table(cses_out$IMD3014) # remove 6789; 4-point
+#table(cses_out$IMD3013_3) # remove 7 8 9; 2-point with 4 and 5
+#table(cses_out$IMD3014) # remove 6 7 8 9; 4-point
 #table(cses_out$IMD5006_1) # remove 999; TOO MANY
 #table(cses_out$IMD5006_2) # remove 999; TOO MANY
 #table(cses_out$IMD5013) # ok; 3-point
@@ -263,7 +266,7 @@ cses_out <- cses_imd[vars3]
 #table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
 #(cses_out$IMD5058_1) # remove 997   999; TOO MANY
 
-
+# # -----------------------------------------------------------------------
 # REMOVING NAs/NRs/DKs
 # # -----------------------------------------------------------------------
 # 95. VOLUNTEERED: HAVEN'T HEARD OF LEFT-RIGHT
@@ -352,7 +355,8 @@ label_all_for_haven <- function(data, data_out) {
 
 cses_out_labels<-label_all_for_haven(cses_imd, cses_out)
 
-# FIXES FOR NOW
+# # -----------------------------------------------------------------------
+# CUSTOM FIXES FOR NOW
 # # -----------------------------------------------------------------------
 require(labelled)
 cses_out_labels$IMD2004[cses_out_labels$IMD2004==5]<-NA
@@ -380,6 +384,7 @@ cses_out_labels$IMD5007 <- labelled(
 
 cses_out_labels$IMD5052_2<-round(cses_out_labels$IMD5052_2, 1)
 
+# # -----------------------------------------------------------------------
 # Exporting DATA (.rds lighter file storage)
 # # -----------------------------------------------------------------------
 # MERGE PAIS_LAB TO CSES_OUT BEFORE EXPORT
@@ -427,6 +432,7 @@ for (var in names(cses_imd)) {
 
 table(vars_labels$responses_en=="" | is.na(vars_labels$responses_en))
 
+# # -----------------------------------------------------------------------
 # FILLING "Question Wording" & "Response Options" for Variables.
 # # -----------------------------------------------------------------------
 qword_ro<-read.csv("./Data preprocessing/cses_qwording.csv", header=T)
@@ -466,6 +472,7 @@ vars_labels$responses_en_rec<-to_sentence_case(vars_labels$responses_en)
 vars_labels$question_short_en<-to_sentence_case(vars_labels$question_short_en)
 vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$question_short_en)
 
+# # -----------------------------------------------------------------------
 # EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
 # REMOVING CONTINUOUS VARS FOR NOW...
@@ -488,7 +495,6 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
                                        vars_labels$responses_en_rec,
                                        sep = " ")
 
-
 # # -----------------------------------------------------------------------
 # CONTINUOUS VARIABLES
 # # -----------------------------------------------------------------------
@@ -510,11 +516,11 @@ labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
                           "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
                           "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
 
+# # -----------------------------------------------------------------------
 # FINAL EXPORT OF LABELS
 # # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
 
-# # -----------------------------------------------------------------------
 # END
 # # -----------------------------------------------------------------------
 message("Code ended succesfully")
