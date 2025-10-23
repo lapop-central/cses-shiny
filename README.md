@@ -1,7 +1,7 @@
 # cses-shiny
 CSES Data Playground
 by Robert Vidigal, Ph.D.
-Version 0.5 (beta)
+Version 0.8 (beta)
 
 
 <!-- badges: start -->
