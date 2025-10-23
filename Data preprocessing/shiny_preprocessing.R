@@ -498,18 +498,21 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
 # # -----------------------------------------------------------------------
 # CONTINUOUS VARIABLES
 # # -----------------------------------------------------------------------
-# IMD3001_TS
-# IMD5054_2
-# IMD5057_1
-# IMD5035
-# IMD5056_2
-# IMD5055_1
-# IMD5053_1
-# IMD5052_2
-# IMD5006_2
-# IMD5006_1
-# IMD5058_1
-# IMD5049
+### CLEAN VARIABLE FROM 7 8 9 CODEBOOK
+### AND THEN USE QUINTILES! (~20% per category)
+
+# cses_imd$IMD3001_TS
+# cses_imd$IMD5054_2
+# cses_imd$IMD5057_1
+# cses_imd$IMD5035
+# cses_imd$IMD5056_2
+# cses_imd$IMD5055_1
+# cses_imd$IMD5053_1
+# cses_imd$IMD5052_2
+# cses_imd$IMD5006_2
+# cses_imd$IMD5006_1
+# cses_imd$IMD5058_1
+# cses_imd$IMD5049
 
 # REMOVING CONTINUOUS VARS FOR NOW...
 labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
