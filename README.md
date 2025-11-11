@@ -1,5 +1,5 @@
 ---
-title: "CSES Data Playground"
+### CSES Data Playground
 ---
 **Date:** November 10th, 2025  
 **Status:** On-going Development  
