@@ -8,7 +8,7 @@
 # Machine: Windows OS
 # # -----------------------------------------------------------------------
 rm(list=ls()); gc()
-library(dplyr)
+library(dplyr); library(haven); require(labelled)
 
 # Loading DATA
 # # -----------------------------------------------------------------------
@@ -264,7 +264,19 @@ cses_out <- cses_imd[vars3]
 #table(cses_out$IMD5055_1) # remove 999; TOO MANY
 #table(cses_out$IMD5056_2) # remove 99999; TOO MANY
 #table(cses_out$IMD5057_1) # remove 9999999999; TOO MANY
-#(cses_out$IMD5058_1) # remove 997   999; TOO MANY
+#table(cses_out$IMD5058_1) # remove 997   999; TOO MANY
+#table(cses_imd$IMD3001_TS) # REMOVE 9
+#table(cses_imd$IMD5054_2) # REMOVE 999
+#table(cses_imd$IMD5057_1) # REMOVE 9999999999
+#table(cses_imd$IMD5035) # REMOVE 999
+#table(cses_imd$IMD5056_2)  # REMOVE 99999
+#table(cses_imd$IMD5055_1) # remove 999
+#table(cses_imd$IMD5053_1) # remove 999999
+#table(cses_imd$IMD5052_2) # remove 99
+#table(cses_imd$IMD5006_2) # REMOVE 999
+#table(cses_imd$IMD5006_1) # REMOVE 999
+#table(cses_imd$IMD5058_1) # REMOVE 997 999
+#table(cses_imd$IMD5049) # REMOVE 999
 
 # # -----------------------------------------------------------------------
 # REMOVING NAs/NRs/DKs
@@ -285,15 +297,16 @@ cses_out <- cses_out %>%
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD3001, IMD3001_PR_1, IMD3001_PR_2,
-                   IMD3001_LH, IMD3001_UH, IMD2001_2,
-                   IMD3002_OUTGOV, IMD3002_LR_CSES), ~
+                  IMD3001_LH, IMD3001_UH, IMD2001_2,
+                  IMD3002_OUTGOV, IMD3002_LR_CSES), ~
                   replace(.x, .x %in% c(9999993:9999999, 9997:9999), NA)))
 
 cses_out <- cses_out %>%
   mutate(across(c(IMD5006_1, IMD5006_2, IMD5035,
                    IMD5049, IMD5053_1, IMD5054_2,
                    IMD5045_1, IMD5055_1, IMD5056_2,
-                   IMD5057_1, IMD5058_1), ~
+                   IMD5057_1, IMD5058_1,
+                   IMD5054_2), ~
                   replace(.x, .x %in% c(9999999999, 999999, 99999, 997, 998, 999), NA)))
 
 
@@ -313,6 +326,125 @@ cses_out <- cses_out %>%
                   replace(.x, .x %in% c(6:9), NA)))
 
 # # -----------------------------------------------------------------------
+# CONTINUOUS VARIABLES RECODE INTO QUINTILES (~20% per category)
+# # -----------------------------------------------------------------------
+# Quintiles (5 groups) — overwrite the column with a factor that shows pretty labels.
+# The factor's internal codes are 1..5 in order,
+# so as.integer(df[[col]]) returns 1..5.
+
+quantile_cut_quintiles <- function(
+    data, value_col, digits = 0, big_mark = ",",
+    include_lowest = TRUE, type = 7) # linear interpolation of the empirical CDF
+ {
+  stopifnot(is.data.frame(data), value_col %in% names(data))
+  x <- data[[value_col]]
+
+  # Breaks at "0,20,40,60,80,100"
+  br <- as.numeric(quantile(x, probs = seq(0, 1, 0.2), na.rm = TRUE, type = type))
+  br <- br[is.finite(br)]
+  br <- unique(br)
+
+  # Edge cases: all-NA or constant
+  if (length(br) < 2) {
+    rng <- if (all(is.na(x))) c(NA, NA) else range(x, na.rm = TRUE)
+    lab <- if (all(is.na(x))) NA_character_ else paste0("[", rng[1], ", ", rng[2], "]")
+    f <- factor(ifelse(is.na(x), NA_character_, lab), levels = lab)  # single level => code 1
+    data[[value_col]] <- f
+    attr(data[[value_col]], "breaks") <- br
+    return(data)
+  }
+
+  # Ensure strictly increasing breaks (avoid duplicate labels)
+  for (i in 2:length(br)) {
+    if (br[i] <= br[i - 1]) {
+      bump <- 1e-8 * max(1, abs(br[i - 1]))
+      br[i] <- br[i - 1] + bump
+    }
+  }
+
+  # Formatting
+  fmt <- function(v) formatC(v, format = "f", digits = digits, big.mark = big_mark)
+
+  # Labels: first/last open-ended text
+  labs <- c(
+    paste0("Less than ", fmt(br[2])),
+    paste0(fmt(br[2]), " to ", fmt(br[3])),
+    paste0(fmt(br[3]), " to ", fmt(br[4])),
+    paste0(fmt(br[4]), " to ", fmt(br[5])),
+    paste0("More than ", fmt(br[5]))
+  )
+
+  # Get quintile codes 1..5, then map to labels
+  codes <- as.integer(findInterval(x, br, rightmost.closed = TRUE, all.inside = TRUE))
+  codes[is.na(x)] <- NA_integer_
+
+  # Create factor with levels in the *desired* order so codes 1..5 align
+  f <- factor(ifelse(is.na(codes), NA_character_, labs[codes]), levels = labs)
+
+  data[[value_col]] <- f
+  attr(data[[value_col]], "breaks") <- br
+  data
+}
+
+# Check the new factor labels (built from raw cutpoints)
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5054_2")
+table(cses_out$IMD5054_2); levels(cses_out$IMD5054_2)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5057_1")
+table(cses_out$IMD5057_1); levels(cses_out$IMD5057_1)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5035")
+table(cses_out$IMD5035); levels(cses_out$IMD5035)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5056_2")
+table(cses_out$IMD5056_2); levels(cses_out$IMD5056_2)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5055_1", digits=2)
+table(cses_out$IMD5055_1); levels(cses_out$IMD5055_1)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5053_1")
+table(cses_out$IMD5053_1); levels(cses_out$IMD5053_1)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5052_2")
+table(cses_out$IMD5052_2); levels(cses_out$IMD5052_2)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5006_2")
+table(cses_out$IMD5006_2); levels(cses_out$IMD5006_2)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5006_1")
+table(cses_out$IMD5006_1); levels(cses_out$IMD5006_1)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5058_1")
+table(cses_out$IMD5058_1); levels(cses_out$IMD5058_1)
+
+cses_out <- quantile_cut_quintiles(cses_out, "IMD5049")
+table(cses_out$IMD5049); levels(cses_out$IMD5049)
+
+# Turn factor quintiles into labelled numerics 1..5 using the factor's own levels as value labels
+factor_quintiles_to_labelled <- function(df, vars) {
+  stopifnot(is.data.frame(df))
+  for (v in vars) {
+    if (!v %in% names(df)) next
+    f <- df[[v]]
+    if (!is.factor(f)) { warning(sprintf("'%s' is not a factor; skipping.", v)); next }
+    lv <- levels(f)
+    if (length(lv) != 5) { warning(sprintf("'%s' has %d levels (expected 5); skipping.", v, length(lv))); next }
+    df[[v]] <- haven::labelled(as.integer(f), labels = stats::setNames(1:5, lv))
+  }
+  df
+}
+
+qvars <- c("IMD5054_2","IMD5057_1","IMD5035","IMD5056_2",
+           "IMD5055_1","IMD5053_1","IMD5052_2","IMD5006_2","IMD5006_1",
+           "IMD5058_1","IMD5049")
+cses_out <- factor_quintiles_to_labelled(cses_out, qvars)
+
+# REMOVING CONTINUOUS VARS FOR NOW...
+#labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+#                          "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
+#                          "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
+
+# # -----------------------------------------------------------------------
 # OUTCOME VARIABLES RECODE (NUMERIC TO LABELS)
 # # -----------------------------------------------------------------------
 # Function to convert labels to sentence case
@@ -327,11 +459,19 @@ to_sentence_case <- function(x) {
 }
 
 #  Label output dataset to include the labels through haven package
-label_all_for_haven <- function(data, data_out) {
+# Safer: won't touch your quintile-binned columns
+label_all_for_haven <- function(data, data_out, exclude_vars = NULL) {
   label_table <- attr(data, "label.table", exact = TRUE)
-  data_labeled <- data_out  # Use the manipulated dataset as base
+  data_labeled <- data_out
 
   for (var in names(data_out)) {
+    # 1) explicit exclude list
+    if (!is.null(exclude_vars) && var %in% exclude_vars) next
+    # 2) skip if already a factor (e.g., your quintile pretty labels)
+    if (is.factor(data_out[[var]])) next
+    # 3) skip if marked as quintiled by attribute you set (optional)
+    if (!is.null(attr(data_out[[var]], "q5_breaks"))) next
+
     if (!is.null(label_table[[var]])) {
       values <- label_table[[var]]
 
@@ -339,26 +479,31 @@ label_all_for_haven <- function(data, data_out) {
       clean_labels <- sub("^\\d+\\.\\s*", "", names(values))
       clean_labels <- to_sentence_case(clean_labels)
 
-      # Build named vector: values = numeric codes, names = labels
+      # Build named vector: names = labels, values = numeric codes
       labelled_vec <- setNames(as.numeric(values), clean_labels)
 
-      # Preserve original variable
+      # Preserve original column's storage; attach labels if numeric/integer
       var_data <- data_out[[var]]
-
-      # Convert to haven::labelled
-      data_labeled[[var]] <- labelled(var_data, labels = labelled_vec)
+      if (is.numeric(var_data) || is.integer(var_data)) {
+        data_labeled[[var]] <- haven::labelled(var_data, labels = labelled_vec)
+      } else {
+        # Non-numeric targets get skipped to avoid clobbering (e.g., factors/quintiles)
+        # Alternatively, you could coerce if you really want:
+        # data_labeled[[var]] <- haven::labelled(as.numeric(var_data), labels = labelled_vec)
+      }
     }
   }
-
-  return(data_labeled)
+  data_labeled
 }
 
-cses_out_labels<-label_all_for_haven(cses_imd, cses_out)
+cses_out_labels <- label_all_for_haven(cses_imd, cses_out,
+                                       exclude_vars = c("IMD5054_2","IMD5057_1","IMD5035","IMD5056_2",
+                                                        "IMD5055_1","IMD5053_1","IMD5052_2","IMD5006_2",
+                                                        "IMD5006_1","IMD5058_1","IMD5049"))
 
 # # -----------------------------------------------------------------------
 # CUSTOM FIXES FOR NOW
 # # -----------------------------------------------------------------------
-require(labelled)
 cses_out_labels$IMD2004[cses_out_labels$IMD2004==5]<-NA
 
 cses_out_labels$IMD3010 <- labelled(
@@ -393,9 +538,9 @@ cses_out_labels <- merge(cses_out_labels, pais_lab_merge, by = "pais_lab")
 str(cses_out_labels)
 
 # REMOVING CONTINUOUS VARS FOR NOW...
-cses_out_labels<-subset(cses_out_labels, select=-c(IMD3001_TS, IMD5054_2, IMD5057_1, IMD5035,
-                                     IMD5056_2, IMD5055_1, IMD5053_1, IMD5052_2,
-                                     IMD5006_2, IMD5006_1, IMD5058_1, IMD5049))
+#cses_out_labels<-subset(cses_out_labels, select=-c(IMD3001_TS, IMD5054_2, IMD5057_1, IMD5035,
+#                                     IMD5056_2, IMD5055_1, IMD5053_1, IMD5052_2,
+#                                     IMD5006_2, IMD5006_1, IMD5058_1, IMD5049))
 
 
 # EXPORT RDS
@@ -442,8 +587,9 @@ vars_labels <- vars_labels %>%
   # Select columns from qword_ro and non-duplicated columns from vars_labels
   select(-contains(".old"))
 
-# REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
+table(vars_labels$responses_en=="" | is.na(vars_labels$responses_en))
 
+# REMOVING NAs/NRs/DKs from ROs and other CLEANING (mojibake/encoding errors)
 #vars_labels$responses_en<-gsub("â€“", ":", vars_labels$responses_en)
 #vars_labels$responses_en<-gsub("00.", "0.", vars_labels$responses_en)
 #vars_labels$question_short_en<-gsub("ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ", ":", vars_labels$question_short_en)
@@ -476,10 +622,10 @@ vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$questio
 # EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
 # REMOVING CONTINUOUS VARS FOR NOW...
-vars_labels <- vars_labels[!vars_labels$column_name %in%
-                                   c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
-                                     "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
-                                     "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049"), ]
+#vars_labels <- vars_labels[!vars_labels$column_name %in%
+#                                   c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+#                                     "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
+#                                     "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049"), ]
 
 write.csv(vars_labels, "./cses_variable_labels.csv", row.names=F)
 
@@ -495,35 +641,16 @@ vars_labels$question_en_comp <- paste0(vars_labels$question_en,
                                        vars_labels$responses_en_rec,
                                        sep = " ")
 
-# # -----------------------------------------------------------------------
-# CONTINUOUS VARIABLES
-# # -----------------------------------------------------------------------
-### CLEAN VARIABLE FROM 7 8 9 CODEBOOK
-### AND THEN USE QUINTILES! (~20% per category)
-
-# cses_imd$IMD3001_TS
-# cses_imd$IMD5054_2
-# cses_imd$IMD5057_1
-# cses_imd$IMD5035
-# cses_imd$IMD5056_2
-# cses_imd$IMD5055_1
-# cses_imd$IMD5053_1
-# cses_imd$IMD5052_2
-# cses_imd$IMD5006_2
-# cses_imd$IMD5006_1
-# cses_imd$IMD5058_1
-# cses_imd$IMD5049
-
-# REMOVING CONTINUOUS VARS FOR NOW...
-labs <- labs[!labs %in% c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
-                          "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2",
-                          "IMD5006_2", "IMD5006_1", "IMD5058_1", "IMD5049")]
+# Dropping MACRO Variables from Outcomes but keeping at secondary vars
+drop_macro <- grep("Macro Data:", names(labs), value = TRUE)
+labs_sec <- labs
+labs <- labs[!(names(labs) %in% drop_macro)]
 
 # # -----------------------------------------------------------------------
 # FINAL EXPORT OF LABELS
 # # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
-
+saveRDS(labs_sec, "./cses_labs_sec.rds")
 # END
 # # -----------------------------------------------------------------------
 message("Code ended succesfully")

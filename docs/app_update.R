@@ -278,71 +278,71 @@ ui <- fluidPage(
   sidebarLayout(
     # ----- Sidebar panel for inputs
     sidebarPanel(width = 3,
-      selectInput("variable", "Outcome",
-                  labs[order(names(labs))],
-                  selected = "IMD3010"),
-      # Default picks most recent module
-      pickerInput(inputId = "module",
-                  label = tagList(info_badge("Module",
-                          HTML("Please select which CSES Modules to be available in the analysis. Then, select which countries and years below."),
-                          "Module")),
-                  choices = sort(levels(as_factor(dstrata$IMD1008_MOD)[!is.na(dstrata$IMD1008_MOD)])),
-                  selected = c("MODULE 5"),
-                  options = list(`actions-box` = TRUE),
-                  multiple = TRUE),
+                 selectInput("variable", "Outcome",
+                             labs[order(names(labs))],
+                             selected = "IMD3010"),
+                 # Default picks most recent module
+                 pickerInput(inputId = "module",
+                             label = tagList(info_badge("Module",
+                                                        HTML("Please select which CSES Modules to be available in the analysis. Then, select which countries and years below."),
+                                                        "Module")),
+                             choices = sort(levels(as_factor(dstrata$IMD1008_MOD)[!is.na(dstrata$IMD1008_MOD)])),
+                             selected = c("MODULE 5"),
+                             options = list(`actions-box` = TRUE),
+                             multiple = TRUE),
 
-      # ----- COUNTRY
-      pickerInput(inputId = "pais",
-                  label = "Countries",
-                    #tagList(info_badge("Countries",
-                    #HTML("Please select which countries to be included in the analysis."),
-                    #"Countries")),
-                  choices = sort(levels(as_factor(dstrata$pais)[!is.na(dstrata$pais)])),
-                  options = list(`actions-box` = TRUE),
-                  multiple = TRUE),
+                 # ----- COUNTRY
+                 pickerInput(inputId = "pais",
+                             label = "Countries",
+                             #tagList(info_badge("Countries",
+                             #HTML("Please select which countries to be included in the analysis."),
+                             #"Countries")),
+                             choices = sort(levels(as_factor(dstrata$pais)[!is.na(dstrata$pais)])),
+                             options = list(`actions-box` = TRUE),
+                             multiple = TRUE),
 
-      # ----- WAVE
-      pickerInput(inputId = "wave",
-                  label = "Years",
-                  #tagList(info_badge("Years",
-                  #                           HTML("Please select which years to be included in the analysis."),
-                  #                           "Years")),
-                  choices = c("1996" = "1996", "1997" = "1997", "1998" = "1998",
-                              "1999" = "1999", "2000" = "2000", "2001" = "2001",
-                              "2002" = "2002", "2003" = "2003", "2004" = "2004",
-                              "2005" = "2005", "2006" = "2006", "2007" = "2007",
-                              "2008" = "2008", "2009" = "2009", "2010" = "2010",
-                              "2011" = "2011", "2012" = "2012", "2013" = "2013",
-                              "2014" = "2014", "2015" = "2015", "2016" = "2016",
-                              "2017" = "2017", "2018" = "2018", "2019" = "2019",
-                              "2020" = "2020", "2021" = "2021"),
-                  options = list(`actions-box` = TRUE),
-                  multiple = TRUE),
+                 # ----- WAVE
+                 pickerInput(inputId = "wave",
+                             label = "Years",
+                             #tagList(info_badge("Years",
+                             #                           HTML("Please select which years to be included in the analysis."),
+                             #                           "Years")),
+                             choices = c("1996" = "1996", "1997" = "1997", "1998" = "1998",
+                                         "1999" = "1999", "2000" = "2000", "2001" = "2001",
+                                         "2002" = "2002", "2003" = "2003", "2004" = "2004",
+                                         "2005" = "2005", "2006" = "2006", "2007" = "2007",
+                                         "2008" = "2008", "2009" = "2009", "2010" = "2010",
+                                         "2011" = "2011", "2012" = "2012", "2013" = "2013",
+                                         "2014" = "2014", "2015" = "2015", "2016" = "2016",
+                                         "2017" = "2017", "2018" = "2018", "2019" = "2019",
+                                         "2020" = "2020", "2021" = "2021"),
+                             options = list(`actions-box` = TRUE),
+                             multiple = TRUE),
 
-      # ----- WEIGHT selection radio buttons
-      bsplus::use_bs_popover(),
-      radioButtons(
-        inputId = "weight_type",
-        label = tagList(info_badge("Weights",
-                        HTML("Further information on weights is available in <b>Part 6</b> of CSES Module 4."),
-                        "Weights")),
-        # For a link, add:
-        # HTML('Further information on weights is available in <b>Part 6</b> of CSES Module 4. <br><a href=\"#\" target=\"_blank\">Open doc</a>')
-        choiceValues = c("no_weight", "weight_demographic", "weight_sample"),
-        choiceNames  = list(
-          info_badge("Unweighted", "No weights applied. Raw proportions/percentages.",
-                     "Unweighted"),
-          info_badge("Demographic weight", "Post-stratification targets.",
-                     "Demographic weight"),
-          info_badge("Sample weight", "Design/selection probability weights.",
-                     "Sample weight")
-        ),
-        selected = "no_weight"),
+                 # ----- WEIGHT selection radio buttons
+                 bsplus::use_bs_popover(),
+                 radioButtons(
+                   inputId = "weight_type",
+                   label = tagList(info_badge("Weights",
+                                              HTML("Further information on weights is available in <b>Part 6</b> of CSES Module 4."),
+                                              "Weights")),
+                   # For a link, add:
+                   # HTML('Further information on weights is available in <b>Part 6</b> of CSES Module 4. <br><a href=\"#\" target=\"_blank\">Open doc</a>')
+                   choiceValues = c("no_weight", "weight_demographic", "weight_sample"),
+                   choiceNames  = list(
+                     info_badge("Unweighted", "No weights applied. Raw proportions/percentages.",
+                                "Unweighted"),
+                     info_badge("Demographic weight", "Post-stratification targets.",
+                                "Demographic weight"),
+                     info_badge("Sample weight", "Design/selection probability weights.",
+                                "Sample weight")
+                   ),
+                   selected = "no_weight"),
 
-      # This fixes a formatting issue with checkboxGroupInput() below
-      tags$head(
-        tags$style(
-          HTML("
+                 # This fixes a formatting issue with checkboxGroupInput() below
+                 tags$head(
+                   tags$style(
+                     HTML("
           .checkbox-inline {
                     margin-left: 0px;
                     margin-right: 10px;
@@ -362,17 +362,17 @@ ui <- fluidPage(
       font-size: 14px;
     }"))),
 
-      # This triggers the "Generate" button
-      tags$script(HTML("
+                 # This triggers the "Generate" button
+                 tags$script(HTML("
       Shiny.addCustomMessageHandler('clickGenerateButton', function(message) {
     $('#go').click();
   });
 ")),
-      # This makes the slider input to allow only integers for CSES years
-      tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
+                 # This makes the slider input to allow only integers for CSES years
+                 tags$style(type = "text/css", ".irs-grid-pol.small {height: 0px;}"),
 
-# Make popovers white + wire TRUE hover with JavaScript
-      tags$style(HTML("
+                 # Make popovers white + wire TRUE hover with JavaScript
+                 tags$style(HTML("
   .popover {
     --bs-popover-bg: #ffffff;
     --bs-popover-border-color: #dddddd;
@@ -387,7 +387,7 @@ ui <- fluidPage(
     color: #212529;
   }
 ")),
-      tags$script(HTML("
+                 tags$script(HTML("
 (function() {
   function upgradeDataAttr(el){
   // Force manual disable
@@ -461,40 +461,40 @@ ui <- fluidPage(
   });
 })();
 ")),
-      # Show recode slider only for TS, CC, and mover plots (not for histogram)
-      conditionalPanel(
-        'input.tabs == "Time Series" |
+                 # Show recode slider only for TS, CC, and mover plots (not for histogram)
+                 conditionalPanel(
+                   'input.tabs == "Time Series" |
         input.tabs == "Cross Country" |
         input.tabs == "Breakdown"',
 
-        uiOutput("sliderUI"),
-        # Mean Value toggle
-       # checkboxInput("use_mean", "Mean value", FALSE),
-      ),
+                   uiOutput("sliderUI"),
+                   # Mean Value toggle
+                   checkboxInput("use_mean", "Mean value", FALSE),
+                 ),
 
-      # Add additional breakdown variable in mover plot
-      conditionalPanel(
-        'input.tabs == "Breakdown"',
-        selectInput("variable_sec",
-                    label = tagList(
-          info_badge("Subgroup for analysis",
-                    HTML("Optionally split the Breakdown plot by another subgroup from the dataset.
+                 # Add additional breakdown variable in mover plot
+                 conditionalPanel(
+                   'input.tabs == "Breakdown"',
+                   selectInput("variable_sec",
+                               label = tagList(
+                                 info_badge("Subgroup for analysis",
+                                            HTML("Optionally split the Breakdown plot by another subgroup from the dataset.
                  Select <b>None</b> to disable."), "Secondary Variable")),
-                    c("None" = "None",
-                      labs_sec[order(names(labs_sec))])),
-        checkboxGroupInput("demog", "Demographic Variables",
-                           c("Gender" = "gendermc",
-                             "Age" = "age",
-                             "Income" = "wealth",
-                             "Education" = "edre",
-                             "Urban/Rural" = "ur"),
-                           selected = c("gendermc", "age", "edre"),
-                           inline = TRUE)),
-      # Include button in UI (disabled)
-      #actionButton("go", "Generate")
-      tags$div(
-        style = "display: none;",
-        actionButton("go", "Generate"))),
+                               c("None" = "None",
+                                 labs_sec[order(names(labs_sec))])),
+                   checkboxGroupInput("demog", "Demographic Variables",
+                                      c("Gender" = "gendermc",
+                                        "Age" = "age",
+                                        "Income" = "wealth",
+                                        "Education" = "edre",
+                                        "Urban/Rural" = "ur"),
+                                      selected = c("gendermc", "age", "edre"),
+                                      inline = TRUE)),
+                 # Include button in UI (disabled)
+                 #actionButton("go", "Generate")
+                 tags$div(
+                   style = "display: none;",
+                   actionButton("go", "Generate"))),
 
     # Main panel for displaying outputs ----
     # # -----------------------------------------------------------------------
@@ -516,7 +516,7 @@ ui <- fluidPage(
                       tags$div(style = "height:10px"),
                       uiOutput("ns_card"),
                       #uiOutput("missing_warning_card"),
-        )
+      )
       )
     )
   )
@@ -551,7 +551,7 @@ server <- function(input, output, session) {
   })
 
   # Check the number of selected variables for breakdown
-   observeEvent(input$demog, {
+  observeEvent(input$demog, {
     if (length(input$demog) > 3) {
       # Show a warning message
       showNotification(HTML("You should only select a maximum of 3 demographic variables to plot."), type = "warning")
@@ -598,8 +598,8 @@ server <- function(input, output, session) {
       dplyr::filter(IMD1008_MOD %in% input$module)
   })
 
-# OLD CODE THAT WOULD FORCE PRESELECTION, BUT IT BREAKS THE APP WITH FULL DATASET
-# Observe changes in module input to update wave and pais
+  # OLD CODE THAT WOULD FORCE PRESELECTION, BUT IT BREAKS THE APP WITH FULL DATASET
+  # Observe changes in module input to update wave and pais
   observeEvent(filtered_data(), {
     data <- filtered_data()
 
@@ -612,14 +612,14 @@ server <- function(input, output, session) {
       choices = wave_choices,
       selected = wave_choices  # you can leave this empty if no preselection
     )
-#
-#    updatePickerInput(
-#      session = session,
-#      inputId = "pais",
-#      choices = pais_choices,
-#      selected = pais_choices
-#    )
-})
+    #
+    #    updatePickerInput(
+    #      session = session,
+    #      inputId = "pais",
+    #      choices = pais_choices,
+    #      selected = pais_choices
+    #    )
+  })
 
   all_waves  <- sort(unique(dstrata$wave))
   all_paises <- sort(unique(dstrata$pais))
@@ -659,155 +659,155 @@ server <- function(input, output, session) {
   })
 
 
-# Set default recode slider values:
-# # -----------------------------------------------------------------------
-# 2-point: 1-1
-# 3-point: 3-3
-# 4-point: 1-2
-# 5-point: 4-5
-# 6-point: 3-3
-# 7-point: 5-7
-# 10-point: 8-10
-# ALL OTHER: MEAN
+  # Set default recode slider values:
+  # # -----------------------------------------------------------------------
+  # 2-point: 1-1
+  # 3-point: 3-3
+  # 4-point: 1-2
+  # 5-point: 4-5
+  # 6-point: 3-3
+  # 7-point: 5-7
+  # 10-point: 8-10
+  # ALL OTHER: MEAN
 
-# UPDATE SLIDER DEFAULTS AND MEAN BEHAVIOR
-# -----------------------------------------------------------------------
-observeEvent({
-  list(input$variable, input$use_mean)
-}, {
-  # compute numeric vector safely
-  xvals <- suppressWarnings(as.numeric(dstrata[[formulaText()]]))
-  maxval <- max(xvals, na.rm = TRUE)
+  # UPDATE SLIDER DEFAULTS AND MEAN BEHAVIOR
+  # -----------------------------------------------------------------------
+  observeEvent({
+    list(input$variable, input$use_mean)
+  }, {
+    # compute numeric vector safely
+    xvals <- suppressWarnings(as.numeric(dstrata[[formulaText()]]))
+    maxval <- max(xvals, na.rm = TRUE)
 
-  # --- DEFAULT RECODE RANGES ---
-  if (maxval == 1) {
-    sliderParams$valuex <- c(1, 1)
-  } else if (maxval == 2) {
-    sliderParams$valuex <- c(1, 1)
-  } else if (maxval == 3) {
-    sliderParams$valuex <- c(3, 3)
-  } else if (maxval == 4) {
-    sliderParams$valuex <- c(1, 2)
-  } else if (maxval == 5) {
-    sliderParams$valuex <- c(4, 5)
-  } else if (maxval == 6) {
-    sliderParams$valuex <- c(3, 3)
-  } else if (maxval == 7) {
-    sliderParams$valuex <- c(5, 7)
-  } else if (maxval == 10) {
-    sliderParams$valuex <- c(8, 10)
-  } else {
-    mean_val <- mean(xvals, na.rm = TRUE)
-    sliderParams$valuex <- c(mean_val, mean_val)
-  }
+    # --- DEFAULT RECODE RANGES ---
+    if (maxval == 1) {
+      sliderParams$valuex <- c(1, 1)
+    } else if (maxval == 2) {
+      sliderParams$valuex <- c(1, 1)
+    } else if (maxval == 3) {
+      sliderParams$valuex <- c(3, 3)
+    } else if (maxval == 4) {
+      sliderParams$valuex <- c(1, 2)
+    } else if (maxval == 5) {
+      sliderParams$valuex <- c(4, 5)
+    } else if (maxval == 6) {
+      sliderParams$valuex <- c(3, 3)
+    } else if (maxval == 7) {
+      sliderParams$valuex <- c(5, 7)
+    } else if (maxval == 10) {
+      sliderParams$valuex <- c(8, 10)
+    } else {
+      mean_val <- mean(xvals, na.rm = TRUE)
+      sliderParams$valuex <- c(mean_val, mean_val)
+    }
 
-  # --- IF USER SELECTED "USE MEAN VALUE" ---
-  if (isTRUE(input$use_mean)) {
-    mean_val <- mean(xvals, na.rm = TRUE)
-    sliderParams$valuex <- c(mean_val, mean_val)
-  }
+    # --- IF USER SELECTED "USE MEAN VALUE" ---
+    if (isTRUE(input$use_mean)) {
+      mean_val <- mean(xvals, na.rm = TRUE)
+      sliderParams$valuex <- c(mean_val, mean_val)
+    }
 
-  # force slider update
-  updateSliderInput(
-    session,
-    inputId = "recode",
-    value = sliderParams$valuex
-  )
-})
+    # force slider update
+    updateSliderInput(
+      session,
+      inputId = "recode",
+      value = sliderParams$valuex
+    )
+  })
 
-# RECODE SLIDER
-# # -----------------------------------------------------------------------
-output$sliderUI <- renderUI({
-  sliderInput(
-    inputId = "recode",
-    label = tagList(
-      info_badge(
-        "Which values do you want to graph?",
-        HTML("Please select which outcome values to be displayed."),
-        "Which values do you want to graph?"
-      )
-    ),
-    min = min(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
-    max = max(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
-    value = sliderParams$valuex,
-    step = 1
-  )
-})
-
-
-# Filtering data based on user's selection (dff)
-dff <- eventReactive(input$go, ignoreNULL = FALSE, {
-  dstrata %>%
-    dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
-    dplyr::filter(pais_nam %in% input$pais) # country
-})
-
-# Rendering var caption based on user's var selection
-cap <- renderText({
-  vars_labels$question_short_en[which(vars_labels$column_name == formulaText())]
-})
-output$caption <- renderText({
-  cap()
-})
-
-# Rendering variable code + wording based on user's var selection
-word <- renderText({
-  paste0(toupper(vars_labels$column_name[which(vars_labels$column_name == formulaText())]), ". ",
-         vars_labels$question_en[which(vars_labels$column_name == formulaText())])
-})
-output$wording <- renderText({
-  word()
-})
-
-# Rendering ROs based on user's var selection
-resp <- renderText({
-  vars_labels$responses_en_rec[which(vars_labels$column_name == formulaText())]
-})
-output$response <- renderText({
-  resp()
-})
-
-# Rendering variable_sec ROs
-resp_sec <- renderText({
-  vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
-})
-output$response_sec <- renderText({
-  resp_sec()
-})
-
-# Rendering User selected recode value(s)
-slider_values <- renderText({
-  if(input$recode[1] == input$recode[2]) {
-    paste0("(value: ", unique(input$recode), ")")
-  } else {
-    paste0("(range: ", paste(input$recode, collapse = " to "), ")")
-  }
-})
-output$selected_values <- renderText({
-  slider_values()
-})
+  # RECODE SLIDER
+  # # -----------------------------------------------------------------------
+  output$sliderUI <- renderUI({
+    sliderInput(
+      inputId = "recode",
+      label = tagList(
+        info_badge(
+          "Which values do you want to graph?",
+          HTML("Please select which outcome values to be displayed."),
+          "Which values do you want to graph?"
+        )
+      ),
+      min = min(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
+      max = max(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
+      value = sliderParams$valuex,
+      step = 1
+    )
+  })
 
 
-# Toggle recode slider
-# # -----------------------------------------------------------------------
-observe({
-  if (isTRUE(input$use_mean)) {
-    shinyjs::disable("recode")
-  } else {
-    shinyjs::enable("recode")
-  }
-})
+  # Filtering data based on user's selection (dff)
+  dff <- eventReactive(input$go, ignoreNULL = FALSE, {
+    dstrata %>%
+      dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
+      dplyr::filter(pais_nam %in% input$pais) # country
+  })
 
-# # -----------------------------------------------------------------------
-# N-SIZE CARD
-# # -----------------------------------------------------------------------
-output$ns_card <- renderUI({
+  # Rendering var caption based on user's var selection
+  cap <- renderText({
+    vars_labels$question_short_en[which(vars_labels$column_name == formulaText())]
+  })
+  output$caption <- renderText({
+    cap()
+  })
+
+  # Rendering variable code + wording based on user's var selection
+  word <- renderText({
+    paste0(toupper(vars_labels$column_name[which(vars_labels$column_name == formulaText())]), ". ",
+           vars_labels$question_en[which(vars_labels$column_name == formulaText())])
+  })
+  output$wording <- renderText({
+    word()
+  })
+
+  # Rendering ROs based on user's var selection
+  resp <- renderText({
+    vars_labels$responses_en_rec[which(vars_labels$column_name == formulaText())]
+  })
+  output$response <- renderText({
+    resp()
+  })
+
+  # Rendering variable_sec ROs
+  resp_sec <- renderText({
+    vars_labels$responses_en_rec[which(vars_labels$column_name == input$variable_sec)]
+  })
+  output$response_sec <- renderText({
+    resp_sec()
+  })
+
+  # Rendering User selected recode value(s)
+  slider_values <- renderText({
+    if(input$recode[1] == input$recode[2]) {
+      paste0("(value: ", unique(input$recode), ")")
+    } else {
+      paste0("(range: ", paste(input$recode, collapse = " to "), ")")
+    }
+  })
+  output$selected_values <- renderText({
+    slider_values()
+  })
+
+
+  # Toggle recode slider
+  # # -----------------------------------------------------------------------
+  observe({
+    if (isTRUE(input$use_mean)) {
+      shinyjs::disable("recode")
+    } else {
+      shinyjs::enable("recode")
+    }
+  })
+
+  # # -----------------------------------------------------------------------
+  # N-SIZE CARD
+  # # -----------------------------------------------------------------------
+  output$ns_card <- renderUI({
     req(dff(), outcome(), input$wave, input$pais)
 
-selected_waves <- as.character(input$wave)
-selected_countries <- as.character(input$pais)
+    selected_waves <- as.character(input$wave)
+    selected_countries <- as.character(input$pais)
 
-ns <- get_sample_counts(
+    ns <- get_sample_counts(
       data = dff(),
       outcome_var = outcome(),
       wave_var = "wave",
@@ -908,112 +908,112 @@ ns <- get_sample_counts(
     )
   })
 
-# -----------------------------------------------------------------------
-# SOURCE INFO WITH ACTUAL DATA AVAILABILITY (not just user selections)
-# -----------------------------------------------------------------------
-source_info_both <- reactive({
-  req(dff(), outcome(), input$wave, input$pais)
+  # -----------------------------------------------------------------------
+  # SOURCE INFO WITH ACTUAL DATA AVAILABILITY (not just user selections)
+  # -----------------------------------------------------------------------
+  source_info_both <- reactive({
+    req(dff(), outcome(), input$wave, input$pais)
 
-  # Reuse your helper to get Ns
-  ns <- get_sample_counts(
-    data = dff(),
-    outcome_var = outcome(),
-    wave_var = "wave",
-    country_var = "pais_nam",
-    selected_waves = input$wave,
-    selected_countries = input$pais
-  )
+    # Reuse your helper to get Ns
+    ns <- get_sample_counts(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      country_var = "pais_nam",
+      selected_waves = input$wave,
+      selected_countries = input$pais
+    )
 
-  # Extract actual combinations with nonzero N
-  valid_combos <- ns$per_country_wave %>%
-    dplyr::filter(n > 0)
+    # Extract actual combinations with nonzero N
+    valid_combos <- ns$per_country_wave %>%
+      dplyr::filter(n > 0)
 
-  # Actual waves and countries that have data
-  valid_waves <- sort(unique(valid_combos$wave))
-  valid_countries <- sort(unique(valid_combos$pais))
+    # Actual waves and countries that have data
+    valid_waves <- sort(unique(valid_combos$wave))
+    valid_countries <- sort(unique(valid_combos$pais))
 
-  # Get abbreviations for these countries (match order)
-  pais_abbr <- dstrata %>%
-    dplyr::filter(pais_nam %in% valid_countries) %>%
-    distinct(pais_nam, pais_lab) %>%
-    arrange(match(pais_nam, valid_countries)) %>%
-    pull(pais_lab)
+    # Get abbreviations for these countries (match order)
+    pais_abbr <- dstrata %>%
+      dplyr::filter(pais_nam %in% valid_countries) %>%
+      distinct(pais_nam, pais_lab) %>%
+      arrange(match(pais_nam, valid_countries)) %>%
+      pull(pais_lab)
 
-  paste0(
-    "Source: CSES Data Playground\n\n",
-    str_wrap(paste0(
-      "Years: ", paste(valid_waves, collapse = ", "),
-      ". Countries: ", paste(pais_abbr, collapse = ", ")
-    ), 130),
-    "\n\n",
-    str_wrap(paste0(word(), " ", resp()), 130)
-  )
-})
+    paste0(
+      "Source: CSES Data Playground\n\n",
+      str_wrap(paste0(
+        "Years: ", paste(valid_waves, collapse = ", "),
+        ". Countries: ", paste(pais_abbr, collapse = ", ")
+      ), 130),
+      "\n\n",
+      str_wrap(paste0(word(), " ", resp()), 130)
+    )
+  })
 
-# -----------------------------------------------------------------------
-source_info_pais <- reactive({
-  req(dff(), outcome(), input$wave, input$pais)
+  # -----------------------------------------------------------------------
+  source_info_pais <- reactive({
+    req(dff(), outcome(), input$wave, input$pais)
 
-  ns <- get_sample_counts(
-    data = dff(),
-    outcome_var = outcome(),
-    wave_var = "wave",
-    country_var = "pais_nam",
-    selected_waves = input$wave,
-    selected_countries = input$pais
-  )
+    ns <- get_sample_counts(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      country_var = "pais_nam",
+      selected_waves = input$wave,
+      selected_countries = input$pais
+    )
 
-  valid_combos <- ns$per_country_wave %>%
-    dplyr::filter(n > 0)
+    valid_combos <- ns$per_country_wave %>%
+      dplyr::filter(n > 0)
 
-  valid_countries <- sort(unique(valid_combos$pais))
+    valid_countries <- sort(unique(valid_combos$pais))
 
-  pais_abbr <- dstrata %>%
-    dplyr::filter(pais_nam %in% valid_countries) %>%
-    distinct(pais_nam, pais_lab) %>%
-    arrange(match(pais_nam, valid_countries)) %>%
-    pull(pais_lab)
+    pais_abbr <- dstrata %>%
+      dplyr::filter(pais_nam %in% valid_countries) %>%
+      distinct(pais_nam, pais_lab) %>%
+      arrange(match(pais_nam, valid_countries)) %>%
+      pull(pais_lab)
 
-  paste0(
-    "Source: CSES Data Playground\n",
-    "Countries: ", str_wrap(paste(pais_abbr, collapse = ", "), 130),
-    "\n\n",
-    str_wrap(paste0(word(), " ", resp()), 130)
-  )
-})
+    paste0(
+      "Source: CSES Data Playground\n",
+      "Countries: ", str_wrap(paste(pais_abbr, collapse = ", "), 130),
+      "\n\n",
+      str_wrap(paste0(word(), " ", resp()), 130)
+    )
+  })
 
-# -----------------------------------------------------------------------
-source_info_wave <- reactive({
-  req(dff(), outcome(), input$wave, input$pais)
+  # -----------------------------------------------------------------------
+  source_info_wave <- reactive({
+    req(dff(), outcome(), input$wave, input$pais)
 
-  ns <- get_sample_counts(
-    data = dff(),
-    outcome_var = outcome(),
-    wave_var = "wave",
-    country_var = "pais_nam",
-    selected_waves = input$wave,
-    selected_countries = input$pais
-  )
+    ns <- get_sample_counts(
+      data = dff(),
+      outcome_var = outcome(),
+      wave_var = "wave",
+      country_var = "pais_nam",
+      selected_waves = input$wave,
+      selected_countries = input$pais
+    )
 
-  valid_combos <- ns$per_country_wave %>%
-    dplyr::filter(n > 0)
+    valid_combos <- ns$per_country_wave %>%
+      dplyr::filter(n > 0)
 
-  valid_waves <- sort(unique(valid_combos$wave))
+    valid_waves <- sort(unique(valid_combos$wave))
 
-  paste0(
-    "Source: CSES Data Playground\n",
-    "Years: ", str_wrap(paste(valid_waves, collapse = ", "), 130),
-    "\n\n",
-    str_wrap(paste0(word(), " ", resp()), 130)
-  )
-})
-# # -----------------------------------------------------------------------
-# PLOTS
-# # -----------------------------------------------------------------------
+    paste0(
+      "Source: CSES Data Playground\n",
+      "Years: ", str_wrap(paste(valid_waves, collapse = ", "), 130),
+      "\n\n",
+      str_wrap(paste0(word(), " ", resp()), 130)
+    )
+  })
+  # # -----------------------------------------------------------------------
+  # PLOTS
+  # # -----------------------------------------------------------------------
 
-# Histogram
-# # -----------------------------------------------------------------------
-# must break into data event, graph event, and renderPlot to get download to work
+  # Histogram
+  # # -----------------------------------------------------------------------
+  # must break into data event, graph event, and renderPlot to get download to work
   histd <- reactive({
     req(dff(), input$variable, input$weight_type)
 
@@ -1038,16 +1038,16 @@ source_info_wave <- reactive({
   })
 
   histg <- reactive({lapop_hist(histd(),
-                        ymax = ifelse(any(histd()$prop > 90), 110, 100),
-                        source_info = "Source: CSES Data Playground")})
+                                ymax = ifelse(any(histd()$prop > 90), 110, 100),
+                                source_info = "Source: CSES Data Playground")})
 
   output$hist <- renderPlot({
     req(dff(), nrow(dff()) > 0, input$variable, input$variable %in% names(dff()))
     return(histg())
   })
 
-# Time-series
-# # -----------------------------------------------------------------------
+  # Time-series
+  # # -----------------------------------------------------------------------
   tsd <- reactive({
     dta_ts <- Error(
       dff() %>%
@@ -1081,22 +1081,22 @@ source_info_wave <- reactive({
   })
 
   tsg <- reactive({lapop_ts(tsd(),
-                   ymax = ifelse(any(tsd()$prop > 85, na.rm = TRUE), 110, 100),
-                   #label_vjust = -1.5,
-                   label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
-                   source_info = "Source: CSES Data Playground",
-                   subtitle = "% in selected category")
+                            ymax = ifelse(any(tsd()$prop > 85, na.rm = TRUE), 110, 100),
+                            #label_vjust = -1.5,
+                            label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
+                            source_info = "Source: CSES Data Playground",
+                            subtitle = "% in selected category")
   })
 
   output$ts <- renderPlot({
     return(tsg())
   })
 
-# Cross Country
-# # -----------------------------------------------------------------------
-# define macro (aggregate-level) variables
-continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
-                     "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2")
+  # Cross Country
+  # # -----------------------------------------------------------------------
+  # define macro (aggregate-level) variables
+  continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+                       "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2")
 
   ccd <- reactive({
     var_sel <- outcome()
@@ -1169,9 +1169,9 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
     ccg()
   })
 
-# Breakdown
-# # -----------------------------------------------------------------------
-# Use function for each demographic breakdown variable
+  # Breakdown
+  # # -----------------------------------------------------------------------
+  # Use function for each demographic breakdown variable
 
   secdf <- eventReactive(input$go, ignoreNULL = FALSE, {
     if (input$variable_sec == "None") {
@@ -1326,12 +1326,12 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
     return(moverg())
   })
 
-# # -----------------------------------------------------------------------
-# DOWNLOAD SECTION
-# # -----------------------------------------------------------------------
+  # # -----------------------------------------------------------------------
+  # DOWNLOAD SECTION
+  # # -----------------------------------------------------------------------
 
-# Download Plot
-# # -----------------------------------------------------------------------
+  # Download Plot
+  # # -----------------------------------------------------------------------
   output$downloadPlot <- downloadHandler(
     filename = function(file) {
 
@@ -1413,8 +1413,8 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
     }
   )
 
-# DOWNLOAD TABLE
- # -----------------------------------------------------------------------
+  # DOWNLOAD TABLE
+  # -----------------------------------------------------------------------
   output$downloadTable <- downloadHandler(
     filename = function(file) {
       ifelse(input$tabs == "Histogram", paste0("hist_", outcome(),".csv"),
