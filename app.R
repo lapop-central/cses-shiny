@@ -22,7 +22,7 @@ options(shiny.useragg = TRUE) # speed it up
 library(lapop); library(bslib); library(htmltools); require(bsplus)
 suppressPackageStartupMessages(library(dplyr))
 library(tidyr); library(stringr); library(haven)
-require(shiny); library(shinyWidgets); require(shinyjs)
+require(shiny); library(shinyWidgets); require(shinyjs); require(ggtext)
 suppressPackageStartupMessages(library(Hmisc, exclude = c("src", "summarize", "units", "format.pval")))
 
 lapop_fonts() # LAPOP GRAPH STYLE
@@ -30,7 +30,7 @@ lapop_fonts() # LAPOP GRAPH STYLE
 # IMD CSES Data (only preselected variables)
 # # -----------------------------------------------------------------------
 # RDA FILE BEST COMPRESSION FOR RSHINY
-load(file="./cses_shiny_data.rda"); dstrata<-cses_shiny_data; rm(cses_shiny_data)
+load(file="./cses_shiny_data.rda");
 
 # Labels data (for DP display)
 vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")
@@ -38,12 +38,16 @@ vars_labels <- read.csv("./cses_variable_labels.csv", encoding = "latin1")
 # Labs vector (for DP display outcomes versus secondary vars that include macro vars)
 labs <- readRDS("./cses_labs.rds")
 labs_sec <- readRDS("./cses_labs_sec.rds")
+load(file="./world.rda")
 
 # Dropping Demographics (OLD, ALLOW USERS TO USE BOTH RAW AND RECODE DEMOG VARS)
 #drop_demoglabs <- c("IMD2001_2", "IMD2002", "IMD2003", "IMD2006", "IMD2007") # Demographics
 #labs_sec <- labs[ !(unname(labs) %in% drop_demoglabs) ]
 
+# # -----------------------------------------------------------------------
 # Error handling function (so app does not break easily)
+# # -----------------------------------------------------------------------
+
 Error<-function(x){
   tryCatch(x,error=function(e) return(FALSE))
 }
@@ -73,8 +77,10 @@ sanitize_for_ggtext <- function(x) {
 }
 
 # # -----------------------------------------------------------------------
-# Helper function for TS (handle missing values at end or middle of series)
+# Helper function for TS
 # # -----------------------------------------------------------------------
+# (handle missing values at end or middle of series)
+
 omit_na_edges <- function(df) {
   # Find which rows have NA values
   na_rows <- apply(df, 1, function(row) any(is.na(row)))
@@ -88,8 +94,6 @@ omit_na_edges <- function(df) {
 
   return(df_clean)
 }
-
-### MOVE IT TO LAPOP_TS???
 
 # # -----------------------------------------------------------------------
 # Custom weighted averages & CIs, much faster than survey_mean() etc
@@ -286,7 +290,7 @@ ui <- fluidPage(
                   label = tagList(info_badge("Module",
                           HTML("Please select which CSES Modules to be available in the analysis. Then, select which countries and years below."),
                           "Module")),
-                  choices = sort(levels(as_factor(dstrata$IMD1008_MOD)[!is.na(dstrata$IMD1008_MOD)])),
+                  choices = sort(levels(as_factor(cses_shiny_data$IMD1008_MOD)[!is.na(cses_shiny_data$IMD1008_MOD)])),
                   selected = c("MODULE 5"),
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
@@ -297,7 +301,7 @@ ui <- fluidPage(
                     #tagList(info_badge("Countries",
                     #HTML("Please select which countries to be included in the analysis."),
                     #"Countries")),
-                  choices = sort(levels(as_factor(dstrata$pais)[!is.na(dstrata$pais)])),
+                  choices = sort(levels(as_factor(cses_shiny_data$pais)[!is.na(cses_shiny_data$pais)])),
                   options = list(`actions-box` = TRUE),
                   multiple = TRUE),
 
@@ -465,6 +469,7 @@ ui <- fluidPage(
       conditionalPanel(
         'input.tabs == "Time Series" |
         input.tabs == "Cross Country" |
+        input.tabs == "World Map" |
         input.tabs == "Breakdown"',
 
         uiOutput("sliderUI"),
@@ -507,7 +512,9 @@ ui <- fluidPage(
                   tabPanel("Histogram", plotOutput("hist")),
                   tabPanel("Time Series", plotOutput("ts")),
                   tabPanel("Cross Country", plotOutput("cc")),
-                  tabPanel("Breakdown", plotOutput("mover"))),
+                  tabPanel("Breakdown", plotOutput("mover")),
+                  tabPanel("World Map", plotOutput("map"))),
+
       br(),
       fluidRow(column(12,
                       tags$div(style = "margin-top:-15px"),
@@ -533,10 +540,10 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   observe({
     req(input$variable)
-    if (!input$variable %in% names(dstrata)) {
+    if (!input$variable %in% names(cses_shiny_data)) {
       showNotification("Selected variable not found in data!", type = "error")
     }
-    if (!input$weight_type %in% names(dstrata)) {
+    if (!input$weight_type %in% names(cses_shiny_data)) {
       showNotification("Selected weight column not found!", type = "error")
     }
   })
@@ -594,7 +601,7 @@ server <- function(input, output, session) {
   # # -----------------------------------------------------------------------
   filtered_data <- reactive({
     req(input$module)
-    dstrata %>%
+    cses_shiny_data %>%
       dplyr::filter(IMD1008_MOD %in% input$module)
   })
 
@@ -621,14 +628,14 @@ server <- function(input, output, session) {
 #    )
 })
 
-  all_waves  <- sort(unique(dstrata$wave))
-  all_paises <- sort(unique(dstrata$pais))
+  all_waves  <- sort(unique(cses_shiny_data$wave))
+  all_paises <- sort(unique(cses_shiny_data$pais))
 
   observeEvent(input$module, {
     req(input$module)
 
     # Filter for the selected module
-    valid <- dplyr::filter(dstrata, IMD1008_MOD %in% input$module)
+    valid <- dplyr::filter(cses_shiny_data, IMD1008_MOD %in% input$module)
     valid_waves  <- sort(unique(valid$wave))
     valid_paises <- sort(unique(valid$pais))
 
@@ -676,7 +683,7 @@ observeEvent({
   list(input$variable, input$use_mean)
 }, {
   # compute numeric vector safely
-  xvals <- suppressWarnings(as.numeric(dstrata[[formulaText()]]))
+  xvals <- suppressWarnings(as.numeric(cses_shiny_data[[formulaText()]]))
   maxval <- max(xvals, na.rm = TRUE)
 
   # --- DEFAULT RECODE RANGES ---
@@ -727,8 +734,8 @@ output$sliderUI <- renderUI({
         "Which values do you want to graph?"
       )
     ),
-    min = min(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
-    max = max(as.numeric(dstrata[[formulaText()]]), na.rm = TRUE),
+    min = min(as.numeric(cses_shiny_data[[formulaText()]]), na.rm = TRUE),
+    max = max(as.numeric(cses_shiny_data[[formulaText()]]), na.rm = TRUE),
     value = sliderParams$valuex,
     step = 1
   )
@@ -737,7 +744,7 @@ output$sliderUI <- renderUI({
 
 # Filtering data based on user's selection (dff)
 dff <- eventReactive(input$go, ignoreNULL = FALSE, {
-  dstrata %>%
+  cses_shiny_data %>%
     dplyr::filter(as_factor(wave) %in% input$wave) %>% # year
     dplyr::filter(pais_nam %in% input$pais) # country
 })
@@ -933,7 +940,7 @@ source_info_both <- reactive({
   valid_countries <- sort(unique(valid_combos$pais))
 
   # Get abbreviations for these countries (match order)
-  pais_abbr <- dstrata %>%
+  pais_abbr <- cses_shiny_data %>%
     dplyr::filter(pais_nam %in% valid_countries) %>%
     distinct(pais_nam, pais_lab) %>%
     arrange(match(pais_nam, valid_countries)) %>%
@@ -968,7 +975,7 @@ source_info_pais <- reactive({
 
   valid_countries <- sort(unique(valid_combos$pais))
 
-  pais_abbr <- dstrata %>%
+  pais_abbr <- cses_shiny_data %>%
     dplyr::filter(pais_nam %in% valid_countries) %>%
     distinct(pais_nam, pais_lab) %>%
     arrange(match(pais_nam, valid_countries)) %>%
@@ -1073,9 +1080,9 @@ source_info_wave <- reactive({
 
     dta_ts <- merge(dta_ts,
                     data.frame(wave = as.character(waves_total), empty = 1),
-                    by = "wave", all.y = TRUE)
-    # %>% dplyr::filter(!is.na(prop)) # TO EXCLUDE YEARS NOT IN THE SELECTION
-    # BUT THEN TS IS NOT SEQUENTIAL IN TERMS OF YEARS
+                    by = "wave", all.y = TRUE) %>%
+      dplyr::filter(!is.na(prop)) # TO EXCLUDE YEARS NOT IN THE SELECTION
+                                  # THEN YEARS ARE NOT SEQUENTIAL
 
     return(omit_na_edges(dta_ts))
   })
@@ -1085,7 +1092,8 @@ source_info_wave <- reactive({
                    #label_vjust = -1.5,
                    label_vjust = ifelse(any(tsd()$prop > 80, na.rm = TRUE), -1.1, -1.5),
                    source_info = "Source: CSES Data Playground",
-                   subtitle = "% in selected category")
+                   subtitle = "% in selected category",
+                   ci_type = "errorbar")
   })
 
   output$ts <- renderPlot({
@@ -1167,6 +1175,80 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
 
   output$cc <- renderPlot({
     ccg()
+  })
+
+# World Map
+# # -----------------------------------------------------------------------
+  mapd <- reactive({
+
+    var_sel <- outcome()
+    rec_min <- input$recode[1]
+    rec_max <- input$recode[2]
+
+    continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
+                         "IMD5056_2", "IMD5055_1", "IMD5053_1", "IMD5052_2")
+
+    req(input$module)
+
+    # --- NEW: allow only one module at a time ---
+    validate(
+      need(
+        length(input$module) == 1,
+        "Please select only ONE module to display a map."
+      )
+    )
+
+    # CASE 1: Continuous macro variable (mean values)
+    if (var_sel %in% continuous_vars) {
+
+      dta_map <- dff() %>%
+        mutate(
+          tmp_val = as.numeric(.data[[var_sel]]),
+          tmp_val = ifelse(tmp_val >= rec_min & tmp_val <= rec_max, tmp_val, NA_real_)
+        ) %>%
+        group_by(pais_lab = pais_lab) %>%       # IMPORTANT: must exist in your dataset
+        summarise(
+          value = mean(tmp_val, na.rm = TRUE),
+          .groups = "drop"
+        ) %>%
+        filter(!is.na(value))
+
+    } else {
+
+      # CASE 2: Categorical / proportion variables
+      dta_map <- dff() %>%
+        drop_na(.data[[var_sel]], .data[[input$weight_type]]) %>%
+        mutate(outcome_rec = case_when(
+          .data[[var_sel]] >= rec_min & .data[[var_sel]] <= rec_max ~ 100,
+          TRUE ~ 0
+        )) %>%
+        group_by(pais_lab = pais_lab) %>%
+        summarise_at(
+          vars("outcome_rec"),
+          list(~weighted.ttest.ci(., .data[[input$weight_type]]))
+        ) %>%
+        unnest_wider(col = "outcome_rec") %>%
+        filter(prop > 0) %>%
+        rename(value = prop)
+    }
+
+    validate(
+      need(nrow(dta_map) > 0,
+           "Error: no map data available for this country/year/variable selection.")
+    )
+
+    return(dta_map)
+  })
+
+  mapg <- reactive({
+    lapop_map(
+      mapd(), survey = "CSES",
+      source_info = "\nSource: CSES Data Playground"
+    )
+  })
+
+  output$map <- renderPlot({
+    mapg()
   })
 
 # Breakdown
@@ -1335,7 +1417,7 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
   output$downloadPlot <- downloadHandler(
     filename = function(file) {
 
-      weight_suffix <- switch(input$weight_type, # Add weight type to file export
+      weight_suffix <- switch(input$weight_type, # Add weight type to plot export
                               "no_weight" = "unweighted",
                               "weight_demographic" = "demogweighted",
                               "weight_sample" = "sampleweighted")
@@ -1343,7 +1425,8 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
       ifelse(input$tabs == "Histogram", paste0("hist_", outcome(), "_", weight_suffix, ".svg"),
              ifelse(input$tabs == "Time Series",  paste0("ts_", outcome(), "_", weight_suffix, ".svg"),
                     ifelse(input$tabs == "Cross Country",  paste0("cc_", outcome(), "_", weight_suffix, ".svg"),
-                           paste0("mover_", outcome(), "_", weight_suffix, ".svg")))) # Add plot type to file export
+                           ifelse(input$tabs == "World Map",  paste0("map_", outcome(), "_", weight_suffix, ".svg"),
+                                  paste0("mover_", outcome(), "_", weight_suffix, ".svg"))))) # Add plot type to file export
     },
 
     content = function(file) {
@@ -1392,6 +1475,20 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
         lapop_save(cc_to_save, file)
         showNotification(HTML("Cross country plot download complete ✓ "), type = "message")
 
+      } else if (input$tabs == "World Map") {
+        title_text <- isolate(cap())
+        subtitle_text <- slider_values()
+
+        map_to_save <- lapop_map(mapd(),
+                               main_title = title_text,
+                               subtitle = paste0("% in selected category ", subtitle_text),
+                               source_info = paste0("\n", source_info_both()),
+                               survey = "CSES"
+        )
+
+        lapop_save(map_to_save, file)
+        showNotification(HTML("Map plot download complete ✓ "), type = "message")
+
       } else {
         title_text <- isolate(cap())
         subtitle_text <- slider_values()
@@ -1417,10 +1514,17 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
  # -----------------------------------------------------------------------
   output$downloadTable <- downloadHandler(
     filename = function(file) {
-      ifelse(input$tabs == "Histogram", paste0("hist_", outcome(),".csv"),
-             ifelse(input$tabs == "Time Series",  paste0("ts_", outcome(),".csv"),
-                    ifelse(input$tabs == "Cross Country",  paste0("cc_", outcome(),".csv"),
-                           paste0("mover_", outcome(),".csv"))))
+
+      weight_suffix <- switch(input$weight_type, # Add weight type to file export
+                              "no_weight" = "unweighted",
+                              "weight_demographic" = "demogweighted",
+                              "weight_sample" = "sampleweighted")
+
+      ifelse(input$tabs == "Histogram", paste0("hist_", outcome(), "_", weight_suffix, ".csv"),
+             ifelse(input$tabs == "Time Series",  paste0("ts_", outcome(), "_", weight_suffix,".csv"),
+                    ifelse(input$tabs == "Cross Country",  paste0("cc_", outcome(), "_", weight_suffix, ".csv"),
+                           ifelse(input$tabs == "World Map",  paste0("map_", outcome(), "_", weight_suffix, ".csv"),
+                                  paste0("mover_", outcome(), "_", weight_suffix, ".csv")))))
     },
     content = function(file) {
       if(input$tabs == "Histogram") {
@@ -1436,6 +1540,11 @@ continuous_vars <- c("IMD3001_TS", "IMD5054_2", "IMD5057_1", "IMD5035",
       } else if (input$tabs == "Cross Country") {
         write.csv(ccd(), file, row.names=F)
         showNotification(HTML("Cross country file download complete ✓ "),
+                         type = "message")
+
+      } else if (input$tabs == "World Map") {
+        write.csv(mapd(), file, row.names=F)
+        showNotification(HTML("Map file download complete ✓ "),
                          type = "message")
 
       } else {

@@ -651,7 +651,24 @@ labs <- labs[!(names(labs) %in% drop_macro)]
 # # -----------------------------------------------------------------------
 saveRDS(labs, "./cses_labs.rds")
 saveRDS(labs_sec, "./cses_labs_sec.rds")
+
+# # -----------------------------------------------------------------------
+# WORLD MAP
+# # -----------------------------------------------------------------------
+url <- "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson"
+library(rnaturalearth); library(sf); library(dplyr)
+world <- ne_countries(scale = "medium", returnclass = "sf") %>%
+select(iso2 = iso_a2, name, geometry) %>%
+  filter(iso2 != "AQ" & iso2 != -99) %>%
+  mutate(iso2 = recode(iso2, "CN-TW"="TW")) %>%
+  rename(pais_lab = iso2, pais =name)
+
+saveRDS(world, "world.rds"); names(world)
+
+save(world, file="world.rda")
+tools::resaveRdaFiles("./world.rda", compress = "xz")
+tools::checkRdaFiles("./world.rda")
+
 # END
 # # -----------------------------------------------------------------------
 message("Code ended succesfully")
-
