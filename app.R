@@ -1,4 +1,3 @@
-# # -----------------------------------------------------------------------
 ### CSES DATA PLAYGROUND
 # Date: November 10th, 2025
 # Author: Robert Vidigal, PhD
@@ -919,7 +918,7 @@ ns <- get_sample_counts(
 # SOURCE INFO WITH ACTUAL DATA AVAILABILITY (not just user selections)
 # -----------------------------------------------------------------------
 source_info_both <- reactive({
-  req(dff(), outcome(), input$wave, input$pais)
+  req(dff(), outcome(), input$wave, input$pais, input$module)
 
   # Reuse your helper to get Ns
   ns <- get_sample_counts(
@@ -938,6 +937,7 @@ source_info_both <- reactive({
   # Actual waves and countries that have data
   valid_waves <- sort(unique(valid_combos$wave))
   valid_countries <- sort(unique(valid_combos$pais))
+  selected_module = input$module
 
   # Get abbreviations for these countries (match order)
   pais_abbr <- cses_shiny_data %>%
@@ -948,8 +948,8 @@ source_info_both <- reactive({
 
   paste0(
     "Source: CSES Data Playground\n\n",
-    str_wrap(paste0(
-      "Years: ", paste(valid_waves, collapse = ", "),
+    str_wrap(paste0("CSES ", selected_module,
+      " - Years: ", paste(valid_waves, collapse = ", "),
       ". Countries: ", paste(pais_abbr, collapse = ", ")
     ), 130),
     "\n\n",
@@ -991,7 +991,7 @@ source_info_pais <- reactive({
 
 # -----------------------------------------------------------------------
 source_info_wave <- reactive({
-  req(dff(), outcome(), input$wave, input$pais)
+  req(dff(), outcome(), input$wave, input$pais, input$module)
 
   ns <- get_sample_counts(
     data = dff(),
@@ -1004,12 +1004,12 @@ source_info_wave <- reactive({
 
   valid_combos <- ns$per_country_wave %>%
     dplyr::filter(n > 0)
-
   valid_waves <- sort(unique(valid_combos$wave))
+  selected_module = input$module
 
   paste0(
-    "Source: CSES Data Playground\n",
-    "Years: ", str_wrap(paste(valid_waves, collapse = ", "), 130),
+    "Source: CSES Data Playground\n", "CSES ", selected_module,
+    " - Years: ", str_wrap(paste(valid_waves, collapse = ", "), 130),
     "\n\n",
     str_wrap(paste0(word(), " ", resp()), 130)
   )
