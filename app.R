@@ -58,22 +58,22 @@ waves_total = c("1996", "1997", "1998", "1999", "2000", "2001", "2002",
                 "2017", "2018", "2019", "2020",  "2021")
 
 # Escape stuff that ggtext/markdown treats specially
-sanitize_for_ggtext <- function(x) {
-  x <- as.character(x)
-  # HTML specials
-  x <- gsub("&", "&amp;", x, fixed = TRUE)
-  x <- gsub("<", "&lt;",  x, fixed = TRUE)
-  x <- gsub(">", "&gt;",  x, fixed = TRUE)
-  # Markdown link/emphasis/backtick
-  x <- gsub("\\[", "&#91;", x)
-  x <- gsub("\\]", "&#93;", x)
-  x <- gsub("\\(", "&#40;", x)
-  x <- gsub("\\)", "&#41;", x)
-  x <- gsub("\\*", "&#42;", x)
-  x <- gsub("_",  "&#95;", x)
-  x <- gsub("`",  "&#96;", x)
-  x
-}
+#sanitize_for_ggtext <- function(x) {
+#  x <- as.character(x)
+#  # HTML specials
+#  x <- gsub("&", "&amp;", x, fixed = TRUE)
+#  x <- gsub("<", "&lt;",  x, fixed = TRUE)
+#  x <- gsub(">", "&gt;",  x, fixed = TRUE)
+#  # Markdown link/emphasis/backtick
+#  x <- gsub("\\[", "&#91;", x)
+#  x <- gsub("\\]", "&#93;", x)
+#  x <- gsub("\\(", "&#40;", x)
+#  x <- gsub("\\)", "&#41;", x)
+#  x <- gsub("\\*", "&#42;", x)
+#  x <- gsub("_",  "&#95;", x)
+#  x <- gsub("`",  "&#96;", x)
+#  x
+#}
 
 # # -----------------------------------------------------------------------
 # Helper function for TS
