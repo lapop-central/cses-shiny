@@ -618,6 +618,10 @@ vars_labels$responses_en_rec<-to_sentence_case(vars_labels$responses_en)
 vars_labels$question_short_en<-to_sentence_case(vars_labels$question_short_en)
 vars_labels$question_short_en <- gsub("([).-])\\s+", "\\1 ", vars_labels$question_short_en)
 
+# CUSTOM FIXES
+vars_labels$responses_en<-gsub("\\(0\\) NOT AT ALL SATISFIED", "\\(5\\) NOT AT ALL SATISFIED", vars_labels$responses_en)
+vars_labels$responses_en_rec<-gsub("\\(0\\) Not at all satisfied", "\\(5\\) Not at all satisfied", vars_labels$responses_en_rec)
+
 # # -----------------------------------------------------------------------
 # EXPORT CSES LABELS
 # # -----------------------------------------------------------------------
@@ -672,3 +676,4 @@ tools::checkRdaFiles("./world.rda")
 # END
 # # -----------------------------------------------------------------------
 message("Code ended succesfully")
+
